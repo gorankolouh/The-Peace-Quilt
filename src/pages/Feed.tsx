@@ -10,8 +10,8 @@ import type { FeedItem, Profile, Region, Theme } from '../lib/types';
 type Tab = 'following' | 'everything' | 'pieces' | 'articles';
 
 export default function Feed() {
-  const { me } = useAuth();
-  const [tab, setTab] = useState<Tab>(me ? 'following' : 'everything');
+  const { me, loading } = useAuth();
+  const [tab, setTab] = useState<Tab>('following');
   const [items, setItems] = useState<FeedItem[] | null>(null);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -20,7 +20,7 @@ export default function Feed() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => { Promise.all([getThemes(), getRegions()]).then(([t, r]) => { setThemes(t); setRegions(r); }).catch((e) => setErr(e.message)); }, []);
-  useEffect(() => { if (!me && tab === 'following') setTab('everything'); }, [me, tab]);
+  useEffect(() => { if (!loading && !me && tab === 'following') setTab('everything'); }, [me, tab, loading]);
 
   useEffect(() => {
     let live = true;
@@ -31,9 +31,10 @@ export default function Feed() {
       if (tab === 'articles') return (await articles()).map((p) => ({ type: 'post', item: p }));
       return everythingFeed();
     };
+    if (loading || (tab === 'following' && !me)) return;
     load().then((x) => live && setItems(x)).catch((e) => live && setErr(e.message));
     return () => { live = false; };
-  }, [tab, me]);
+  }, [tab, me, loading]);
 
   useEffect(() => {
     if (tab === 'following' && items && items.filter((i) => i.item.author_id !== me?.id).length < 3)

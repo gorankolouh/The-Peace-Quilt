@@ -5,7 +5,7 @@ import { Avatar, ErrorNote, Icon, RoleChip, Spinner } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { cachedProfile, conversationOther, getMessages, markRead, sendMessage } from '../lib/data';
 import { clock, nameOf } from '../lib/format';
-import { supabase } from '../lib/supabase';
+import { DEMO, supabase } from '../lib/supabase';
 import type { Message } from '../lib/types';
 
 export default function Chat() {
@@ -31,7 +31,8 @@ export default function Chat() {
         markRead(conv);
       })
       .subscribe();
-    return () => { live = false; supabase.removeChannel(ch); };
+    const poll = DEMO ? setInterval(() => getMessages(conv).then((m) => live && setMsgs(m)), 2000) : undefined;
+    return () => { live = false; clearInterval(poll); supabase.removeChannel(ch); };
   }, [conv, me]);
 
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [msgs]);

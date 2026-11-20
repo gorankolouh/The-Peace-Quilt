@@ -217,3 +217,4 @@ textarea.tall { min-height: 360px; }
 .foot-links { margin-top: 32px; font-size: 13px; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) { .spinner .dot { animation: none; } }
+.demo-bar { position: sticky; top: 0; z-index: 40; background: var(--lime); color: #0A0B0A; font-size: 13px; font-weight: 600; text-align: center; padding: 6px 12px; }

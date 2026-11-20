@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './styles.css';
 import { AuthProvider, useAuth } from './lib/auth';
-import { configured } from './lib/supabase';
+import { configured, DEMO } from './lib/supabase';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import Welcome from './pages/Welcome';
@@ -48,6 +48,8 @@ function App() {
   if (!configured) return <NotConfigured />;
   return (
     <SetupGate>
+      <>
+      {DEMO && <div className="demo-bar">Preview with sample data. Nothing you do here is saved.</div>}
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
@@ -70,16 +72,25 @@ function App() {
           <Route path="*" element={<div className="col"><h1>Page not found</h1><p className="sub">This page does not exist or is no longer available.</p></div>} />
         </Route>
       </Routes>
+      </>
     </SetupGate>
   );
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
+    {DEMO ? (
+      <MemoryRouter initialEntries={['/' + window.location.hash.slice(1).replace(/-/g, '/')]}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </MemoryRouter>
+    ) : (
+      <BrowserRouter>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </BrowserRouter>
+    )}
   </React.StrictMode>,
 );

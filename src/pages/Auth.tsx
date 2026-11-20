@@ -5,7 +5,7 @@ import { ErrorNote } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { PROFILE_ROLES } from '../lib/constants';
 import { updateMyProfile } from '../lib/data';
-import { supabase } from '../lib/supabase';
+import { DEMO, supabase } from '../lib/supabase';
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -21,12 +21,14 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 
 function GoogleButton({ next }: { next: string }) {
   const [err, setErr] = useState<string | null>(null);
+  const nav = useNavigate();
   return (
     <>
       <button
         type="button"
         className="btn ghost wide"
         onClick={async () => {
+          if (DEMO) { await supabase.auth.signInWithPassword({ email: 'demo@x', password: 'demo' }); nav(next); return; }
           const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + next } });
           if (error) setErr(error.message);
         }}
