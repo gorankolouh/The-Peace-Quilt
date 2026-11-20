@@ -7,7 +7,7 @@ Stack: React + TypeScript (Vite), Supabase (Postgres, Auth, Storage, Realtime) i
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then do the same with `0002_grants.sql`.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 
