@@ -1,0 +1,55 @@
+export type Profile = {
+  id: string;
+  username: string | null;
+  display_name: string;
+  role: string;
+  bio: string;
+  is_researcher: boolean;
+  is_moderator: boolean;
+  created_at: string;
+};
+export type Theme = { id: number; name: string; short: string };
+export type Region = { id: number; name: string };
+export type MediaKind = 'photo' | 'video' | 'audio' | 'document';
+export type Story = {
+  id: number;
+  title: string;
+  body: string;
+  role: string;
+  theme_id: number;
+  region_id: number;
+  consent: 'public' | 'pseudonymous' | 'researchers';
+  media_path: string | null;
+  media_kind: MediaKind | null;
+  created_at: string;
+  author_id: string | null;
+  is_mine: boolean;
+  like_count: number;
+  comment_count: number;
+  liked: boolean;
+};
+export type Post = {
+  id: number;
+  author_id: string;
+  kind: 'post' | 'article';
+  title: string | null;
+  body: string;
+  media_path: string | null;
+  media_kind: MediaKind | null;
+  created_at: string;
+  is_mine: boolean;
+  like_count: number;
+  comment_count: number;
+  liked: boolean;
+};
+export type Comment = { id: number; author_id: string; body: string; created_at: string };
+export type FeedItem = { type: 'story'; item: Story } | { type: 'post'; item: Post };
+export type Conversation = {
+  conversation_id: string;
+  other_id: string;
+  last_body: string | null;
+  last_at: string | null;
+  last_sender: string | null;
+  unread: number;
+};
+export type Message = { id: number; conversation_id: string; sender_id: string; body: string; created_at: string };
