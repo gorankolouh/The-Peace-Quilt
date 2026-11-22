@@ -55,12 +55,59 @@ const stories: Row[] = RAW.map((r, i) => ({
   consent: r[5], media_path: null, media_kind: null, hidden: false, created_at: ago((RAW.length - i) * 7),
 }));
 
-const posts: Row[] = [
-  { id: 1, author_id: P(2), kind: 'post', title: null, body: 'Three villages now use the same water-sharing wording. Local agreements copy each other faster than any treaty. If you helped make one, add your piece to the quilt.', created_at: ago(3) },
-  { id: 2, author_id: P(3), kind: 'article', title: 'What 40 local truces have in common', body: 'For two years we collected agreements that no government signed: pump schedules, market rules, bus lists, exam rooms. Forty of them are now pieces in this quilt, and when you lay them side by side, the same shapes keep appearing.\n\nThey start with something everyone needs. Twenty-six of the forty began with water, food or schooling. Nobody negotiated about the conflict itself. They negotiated about a pump, a harvest or a classroom, and the conflict had to make room.\n\nWomen often hold the first conversation. In more than half of the cases, the first talks happened between women, in kitchens, sewing circles or on the radio, long before any commander was involved.\n\nThe wording travels. A bakery used the exact wording of a water-pump truce from two villages away. That is the strongest argument for keeping these stories together: a solution that worked once can be found and reused.', created_at: ago(5) },
-  { id: 3, author_id: P(4), kind: 'post', title: null, body: 'First day back in the shared classroom. Morning shift, afternoon shift, same blackboard.', created_at: ago(20) },
-  { id: 4, author_id: P(5), kind: 'post', title: null, body: 'We published a draft consent protocol for contributors. Comments are open until Friday. Tell us what would make you feel safe sharing your story.', created_at: ago(30) },
-].map((p) => ({ media_path: null, media_kind: null, hidden: false, ...p }));
+const SUBJECTS: [number, string, string, string][] = [
+  [1, 'politics-democracy', 'Politics & Democracy', 'Elections, governments, democratic institutions, public policy, corruption, transparency and civic participation.'],
+  [2, 'peace-international', 'Peace & International Affairs', 'Wars, diplomacy, international relations, conflict prevention, humanitarian affairs and peacebuilding.'],
+  [3, 'human-rights-justice', 'Human Rights & Justice', 'Equality, discrimination, international law, civil liberties, migration, access to justice and human rights violations.'],
+  [4, 'business-entrepreneurship', 'Business & Entrepreneurship', 'Small businesses, startups, entrepreneurship, employment, international trade and business development.'],
+  [5, 'economy-finance', 'Economy & Finance', 'Inflation, banking, taxation, public spending, economic policies, financial systems and inequality.'],
+  [6, 'education-knowledge', 'Education & Knowledge', 'Schools, universities, scientific research, educational policy, professional training and lifelong learning.'],
+  [7, 'children-family-society', 'Children, Family & Society', "Children's rights, parenting, families, aging populations, social welfare and social development."],
+  [8, 'technology-digital', 'Technology & Digital Life', 'Artificial intelligence, cybersecurity, digital sovereignty, online platforms, data protection and emerging technologies.'],
+  [9, 'health-wellbeing', 'Health & Wellbeing', 'Healthcare, public health, medical research, mental health, healthcare policy and wellbeing.'],
+  [10, 'environment-sustainability', 'Environment & Sustainability', 'Climate change, biodiversity, pollution, energy, environmental protection and sustainable development.'],
+  [11, 'culture-media-identity', 'Culture, Media & Identity', 'Journalism, media freedom, cultural heritage, arts, languages, religion, identity and media literacy.'],
+  [12, 'communities-everyday', 'Communities & Everyday Life', 'Housing, transport, accessibility, local issues, public services, infrastructure and community development.'],
+];
+const SUBTOPICS: [number, string][] = [
+  [1, 'Elections'], [1, 'Public policy'], [1, 'Corruption & transparency'], [2, 'Diplomacy'], [2, 'Humanitarian affairs'], [2, 'Peacebuilding'],
+  [3, 'Equality & discrimination'], [3, 'Migration'], [3, 'Access to justice'], [4, 'Small businesses'], [4, 'Employment'], [5, 'Inflation & prices'],
+  [5, 'Taxation & public spending'], [6, 'Schools'], [6, 'Education policy'], [6, 'Universities & research'], [7, "Children's rights"], [7, 'Social welfare'],
+  [8, 'Artificial intelligence'], [8, 'Data protection'], [8, 'Digital sovereignty'], [9, 'Public health'], [9, 'Mental health'], [10, 'Energy'],
+  [10, 'Climate change'], [11, 'Journalism & media freedom'], [11, 'Media literacy'], [12, 'Housing'], [12, 'Transport'],
+];
+const subtopics: Row[] = SUBTOPICS.map(([subject_id, name], i) => ({ id: i + 1, subject_id, name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }));
+const st = (name: string) => subtopics.find((x) => x.name === name)!.id;
+
+type Seed = { a: string; k: string; t: string | null; b: string; h: number; s: number[]; st?: string[]; tags?: string[]; c?: string; l?: string; src?: { url: string; title?: string }[] };
+const SEED: Seed[] = [
+  { a: P(3), k: 'research', t: 'Public school funding in Germany: what the 2026 state budgets show', h: 2, s: [6, 5], st: ['Education policy', 'Taxation & public spending'], tags: ['school funding', 'teacher shortage'], c: 'DE',
+    b: 'We compared the 2026 education budgets of all sixteen German states. Spending per pupil ranges from about 8,900 to 12,400 euros, and the gap has widened since 2022.\n\nThe states with the largest teacher shortages are not the ones spending least. Shortages follow demographics and pay structures more than total budgets.\n\nThe full table and our method are linked below, so anyone can check and extend the figures.',
+    src: [{ url: 'https://www.destatis.de/', title: 'Federal Statistical Office (Destatis)' }, { url: 'https://www.kmk.org/', title: 'Standing Conference of Education Ministers (KMK)' }] },
+  { a: P(4), k: 'question', t: 'How is public school funding decided in the Netherlands?', h: 4, s: [6], st: ['Education policy'], tags: ['school funding'], c: 'NL',
+    b: 'I teach in Germany and keep hearing that Dutch schools get a lump sum per pupil and decide themselves how to spend it. Is that accurate, and has it helped with teacher shortages?' },
+  { a: P(2), k: 'post', t: null, h: 6, s: [2, 3], st: ['Peacebuilding'], tags: ['local agreements'],
+    b: 'Three villages now use the same water-sharing wording. Local agreements copy each other faster than any treaty. If you helped make one, add it to the Peace Quilt collection.' },
+  { a: P(6), k: 'article', t: 'AI hiring tools and discrimination: what the EU AI Act changes for employers', h: 9, s: [8, 3, 4], st: ['Artificial intelligence', 'Equality & discrimination', 'Employment'], tags: ['ai act', 'algorithmic hiring'], c: 'EU',
+    b: 'Recruitment software that ranks candidates is classed as high-risk under the EU AI Act. From August 2026, employers using such systems must keep logs, ensure human oversight and inform candidates.\n\nIn practice, many small companies do not know the tools they license fall under these rules. This article explains what to ask your vendor.',
+    src: [{ url: 'https://eur-lex.europa.eu/eli/reg/2024/1689/oj', title: 'Regulation (EU) 2024/1689 (AI Act)' }] },
+  { a: P(5), k: 'post', t: 'Teacher shortage: Croatia raises starting salaries', h: 12, s: [6, 5], st: ['Schools'], tags: ['teacher shortage'], c: 'HR', l: 'en',
+    b: 'Croatia announced higher starting salaries for teachers from January. Unions say it closes only part of the gap with other public-sector jobs. Similar debates are running in Germany and Slovenia.' },
+  { a: P(7), k: 'post', t: null, h: 20, s: [12, 10], st: ['Transport', 'Energy'], tags: ['public transport'], c: 'AT',
+    b: 'Vienna’s annual public transport pass still costs one euro a day. Ridership is up, car ownership in the city is down. Would a model like this work in your city?' },
+  { a: P(3), k: 'article', t: 'Children in conflict zones lose years of schooling. What helps them catch up?', h: 30, s: [2, 6, 7, 3], st: ['Humanitarian affairs', "Children's rights", 'Schools'], tags: ['education in emergencies'], c: 'PS',
+    b: 'When schools close during conflict, children do not just lose time. They lose the routine, safety and meals that school provides.\n\nAccelerated learning programmes, community classrooms and radio lessons have all shown results. This piece collects what worked, with links to the evaluations.',
+    src: [{ url: 'https://inee.org/', title: 'Inter-agency Network for Education in Emergencies' }] },
+  { a: P(6), k: 'question', t: 'Which European cloud providers are actually EU-owned?', h: 40, s: [8], st: ['Digital sovereignty', 'Data protection'], tags: ['european cloud'],
+    b: 'Server location in Frankfurt does not mean European control. I am collecting providers by ownership and legal jurisdiction. Please add sources.' },
+];
+const posts: Row[] = SEED.map((x, i) => ({
+  id: i + 1, author_id: x.a, kind: x.k, title: x.t, body: x.b, created_at: ago(x.h), media_path: null, media_kind: null, hidden: false,
+  language: x.l ?? 'en', country: x.c ?? null, sources: x.src ?? [], updated_at: null,
+}));
+const postSubjects: Row[] = SEED.flatMap((x, i) => x.s.map((subject_id) => ({ post_id: i + 1, subject_id })));
+const postSubtopics: Row[] = SEED.flatMap((x, i) => (x.st ?? []).map((n) => ({ post_id: i + 1, subtopic_id: st(n) })));
+const postTags: Row[] = SEED.flatMap((x, i) => (x.tags ?? []).map((tag) => ({ post_id: i + 1, tag })));
 
 const db: Record<string, Row[]> = {
   themes: [
@@ -77,13 +124,20 @@ const db: Record<string, Row[]> = {
   profiles,
   stories,
   posts,
+  subjects: SUBJECTS.map(([id, slug, name, description]) => ({ id, slug, name, description, sort: id })),
+  subtopics,
+  post_subjects: postSubjects,
+  post_subtopics: postSubtopics,
+  post_tags: postTags,
+  user_interests: [6, 8, 3].map((subject_id) => ({ user_id: DEMO_ME, subject_id })),
   likes: [
     ...stories.slice(0, 20).flatMap((s, i) => profiles.slice(1, 2 + (i % 5)).map((p) => ({ user_id: p.id, target_type: 'story', target_id: s.id, created_at: ago(1) }))),
     ...posts.flatMap((x) => profiles.slice(1, 6).map((p) => ({ user_id: p.id, target_type: 'post', target_id: x.id, created_at: ago(1) }))),
   ],
   comments: [
     { id: 1, author_id: P(2), target_type: 'story', target_id: 13, body: 'We did the same with the bakery agreement. Recipes are safer than minutes.', hidden: false, created_at: ago(2) },
-    { id: 2, author_id: P(4), target_type: 'post', target_id: 2, body: 'The schools pattern matches what we saw in the Old town.', hidden: false, created_at: ago(4) },
+    { id: 2, author_id: P(4), target_type: 'post', target_id: 1, body: 'Very useful. Do you have the same table for 2022, to compare?', hidden: false, created_at: ago(1.5) },
+    { id: 3, author_id: P(3), target_type: 'post', target_id: 2, body: 'Mostly yes: Dutch schools receive a lump sum per pupil. I linked a comparison in my research post on German funding.', hidden: false, created_at: ago(3) },
   ],
   follows: [P(2), P(3), P(4), P(5)].map((id) => ({ follower_id: DEMO_ME, followee_id: id, created_at: ago(100) }))
     .concat([P(2), P(3), P(6)].map((id) => ({ follower_id: id, followee_id: DEMO_ME, created_at: ago(90) }))),
@@ -122,6 +176,9 @@ function view(name: string): Row[] {
       like_count: db.likes.filter((l) => l.target_type === 'post' && l.target_id === p.id).length,
       comment_count: db.comments.filter((c) => c.target_type === 'post' && c.target_id === p.id).length,
       liked: db.likes.some((l) => l.target_type === 'post' && l.target_id === p.id && l.user_id === me),
+      subject_ids: db.post_subjects.filter((x) => x.post_id === p.id).map((x) => x.subject_id).sort((a, b) => a - b),
+      subtopic_ids: db.post_subtopics.filter((x) => x.post_id === p.id).map((x) => x.subtopic_id),
+      tags: db.post_tags.filter((x) => x.post_id === p.id).map((x) => x.tag).sort(),
     }));
   }
   return db[name] ?? [];
@@ -139,6 +196,15 @@ function test(row: Row, col: string, expr: string): boolean {
   else if (op === 'neq') ok = String(cell) !== parseVal(raw);
   else if (op === 'is') ok = raw === 'null' ? cell == null : String(cell) === raw;
   else if (op === 'in') ok = raw.replace(/^\(|\)$/g, '').split(',').map(parseVal).includes(String(cell));
+  else if (op === 'cs' || op === 'ov') {
+    const want = raw.replace(/^\{|\}$/g, '').split(',').filter(Boolean).map(parseVal);
+    const have = (Array.isArray(cell) ? cell : []).map(String);
+    ok = op === 'cs' ? want.every((w) => have.includes(w)) : want.some((w) => have.includes(w));
+  } else if (op.startsWith('wfts') || op.startsWith('fts') || op.startsWith('plfts')) {
+    const words = decodeURIComponent(raw.slice(raw.indexOf(')') + 1 || 0)).toLowerCase().split(/\s+/).filter(Boolean);
+    const text = `${row.title ?? ''} ${row.body ?? ''}`.toLowerCase();
+    ok = words.every((w) => text.includes(w));
+  }
   return neg ? !ok : ok;
 }
 function filter(rows: Row[], params: URLSearchParams): Row[] {
@@ -195,6 +261,18 @@ function rpc(fn: string, args: Row): unknown {
     return null;
   }
   if (fn === 'delete_my_account') { me = null; return null; }
+  if (fn === 'related_posts') {
+    const all = view('posts_v');
+    const base = all.find((p) => p.id === args.pid);
+    if (!base) return [];
+    return all.filter((p) => p.id !== base.id).map((p) => {
+      const ss = p.subject_ids.filter((x: number) => base.subject_ids.includes(x)).length;
+      const stt = p.subtopic_ids.filter((x: number) => base.subtopic_ids.includes(x)).length;
+      const tg = p.tags.filter((x: string) => base.tags.includes(x));
+      const sc = !!(p.country && p.country === base.country);
+      return { post_id: p.id, score: stt * 3 + tg.length * 3 + ss + (sc ? 2 : 0), shared_subjects: ss, shared_subtopics: stt, shared_tags: tg, same_country: sc };
+    }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).slice(0, args.max_results || 8);
+  }
   return null;
 }
 

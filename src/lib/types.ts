@@ -28,10 +28,14 @@ export type Story = {
   comment_count: number;
   liked: boolean;
 };
+export type Subtopic = { id: number; subject_id: number; slug: string; name: string };
+export type Subject = { id: number; slug: string; name: string; description: string; sort: number; subtopics: Subtopic[] };
+export type Source = { url: string; title?: string };
+export type PostKind = 'post' | 'question' | 'article' | 'research';
 export type Post = {
   id: number;
   author_id: string;
-  kind: 'post' | 'article';
+  kind: PostKind;
   title: string | null;
   body: string;
   media_path: string | null;
@@ -41,6 +45,21 @@ export type Post = {
   like_count: number;
   comment_count: number;
   liked: boolean;
+  language: string;
+  country: string | null;
+  sources: Source[];
+  updated_at: string | null;
+  subject_ids: number[];
+  subtopic_ids: number[];
+  tags: string[];
+};
+export type Related = {
+  post: Post;
+  score: number;
+  shared_subjects: number;
+  shared_subtopics: number;
+  shared_tags: string[];
+  same_country: boolean;
 };
 export type Comment = { id: number; author_id: string; body: string; created_at: string };
 export type FeedItem = { type: 'story'; item: Story } | { type: 'post'; item: Post };

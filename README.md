@@ -1,13 +1,27 @@
-# The Peace Quilt
+# Verum Agora
 
-A living archive of small, true peace stories. People share pieces: a story, a photo or a voice note. Each piece is tagged by role, theme and region. The pieces are sewn into a quilt that rises into a constellation, and threads connect separate voices. The platform also has posts, long articles, a following feed, comments, likes and private messages.
+**Where Reality Connects.** An independent, European, ad-free social information network: subjects over personalities, information over influence. (Formerly The Peace Quilt, which lives on as a collection inside *Peace & International Affairs*.)
 
-Stack: React + TypeScript (Vite), Supabase (Postgres, Auth, Storage, Realtime) in the EU region, deployed on Vercel.
+Stack: React + TypeScript (Vite), Supabase (Postgres, Auth, Storage, Realtime) in the EU region, deployed on Vercel. The database is plain Postgres with migrations in `supabase/migrations/`, so it can move to any European Postgres host.
+
+## Phase 1 (this version)
+
+- **12 subjects with subtopics.** Each subject has its own page. A contribution can carry 1 to 4 subjects, plus subtopics and free topic/event tags. Subjects and subtopics live in tables, so adding more needs no code change.
+- **Publishing:** post, question, article, research & analysis, plus peace stories. Every contribution has a language, an optional country/region, source links and media, and can be edited or deleted by its author.
+- **Feed modes:** My Interests (chosen at sign-up and changeable in Settings), Following, Latest and Explore. Each mode explains why you see what you see. Nothing is ranked by follower counts or likes.
+- **Related Discussions** on every contribution, from a transparent rule-based score: shared subtopic +3, shared topic tag +3, shared subject +1, same country +2, similar wording up to +2, small freshness bonus. Each result says what connects it. This lives in the `related_posts()` SQL function and can be swapped for semantic search later.
+- **Search the archive:** full-text search with subject, country, language, type and topic filters. Old contributions stay findable.
+- **Kept from before:** accounts (email and Google), profiles, follows, comments, likes, private messages, blocking, reporting, GDPR export and account deletion, private media with signed links, and photo metadata removal.
+
+## Planned next (not built yet)
+
+- **Phase 2, information transparency layer:** claims and evidence, BLUE/AMBER/RED notices, a contradiction-detection demo, a human review workflow and appeals.
+- **Phase 3, platform operations:** notifications, comment replies, a moderator dashboard with documented decisions and user notices, rate limiting, interface translations (DE, FR, NL, ES, IT, HR, PL), translated-content labels, cross-language connections, and a European infrastructure assessment.
 
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then do the same with `0002_grants.sql`.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, then `0003_verum_agora.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 

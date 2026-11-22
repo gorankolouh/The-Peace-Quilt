@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { CONSENT_SHORT, REPORT_REASONS } from '../lib/constants';
+import { CONSENT_SHORT, POST_KINDS, REPORT_REASONS, countryName } from '../lib/constants';
+import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 import { addComment, cachedProfile, deleteComment, getComments, report, setLike } from '../lib/data';
 import { nameOf, readMinutes, timeAgo } from '../lib/format';
 import type { Comment, Post, Region, Story, Theme } from '../lib/types';
@@ -104,24 +105,52 @@ export function StoryCard({ s, themes, regions }: { s: Story; themes: Theme[]; r
   );
 }
 
-export function PostCard({ p }: { p: Post }) {
+export function SubjectChips({ ids, subtopicIds = [], tags = [] }: { ids: number[]; subtopicIds?: number[]; tags?: string[] }) {
+  const subjects = useSubjects();
+  if (!ids.length && !tags.length) return null;
+  const subtopics = subjects.flatMap((s) => s.subtopics).filter((t) => subtopicIds.includes(t.id));
+  return (
+    <div className="row subj-row">
+      {ids.map((id) => {
+        const s = subjects.find((x) => x.id === id);
+        if (!s) return null;
+        const c = SUBJECT_COLORS[id];
+        return <Link key={id} to={`/s/${s.slug}`} className="chip subj" style={{ background: c + '1f', color: c }}>{s.name}</Link>;
+      })}
+      {subtopics.map((t) => <span key={'t' + t.id} className="chip muted">{t.name}</span>)}
+      {tags.map((t) => <Link key={'g' + t} to={`/search?tag=${encodeURIComponent(t)}`} className="chip tag">#{t}</Link>)}
+    </div>
+  );
+}
+
+export function PostCard({ p, reason }: { p: Post; reason?: string }) {
   const author = cachedProfile(p.author_id);
+  const long = p.kind === 'article' || p.kind === 'research';
+  const meta = [author?.username ? '@' + author.username : '', timeAgo(p.created_at), countryName(p.country), p.updated_at ? 'edited' : '']
+    .filter(Boolean).join(' · ');
   return (
     <article className="card">
-      <Who authorId={p.author_id} role={author?.role ?? 'Member'} meta={(author?.username ? '@' + author.username + ' · ' : '') + timeAgo(p.created_at)} />
-      {p.kind === 'article' ? (
+      <Who authorId={p.author_id} role={author?.role ?? 'Member'} meta={meta} />
+      {long ? (
         <Link className="art" to={`/post/${p.id}`}>
           <div className="cover" aria-hidden="true"><CoverArt seed={p.id} /></div>
           <div className="txt">
-            <span className="eyebrow muted">Article · {readMinutes(p.body)} min read</span>
+            <span className="eyebrow muted">{POST_KINDS[p.kind]} · {readMinutes(p.body)} min read</span>
             <h3>{p.title}</h3>
             <p>{p.body.slice(0, 200)}{p.body.length > 200 ? '…' : ''}</p>
           </div>
         </Link>
       ) : (
-        <Link to={`/post/${p.id}`} className="plain"><p className="post-body">{p.body}</p></Link>
+        <Link to={`/post/${p.id}`} className="plain">
+          {p.kind === 'question' && <span className="eyebrow q">Question</span>}
+          {p.title && <h3 className="post-title">{p.title}</h3>}
+          <p className="post-body">{p.body.length > 600 ? p.body.slice(0, 600) + '…' : p.body}</p>
+        </Link>
       )}
-      {p.kind === 'post' && p.media_path && p.media_kind && <MediaView path={p.media_path} kind={p.media_kind} />}
+      {!long && p.media_path && p.media_kind && <MediaView path={p.media_path} kind={p.media_kind} />}
+      <SubjectChips ids={p.subject_ids || []} tags={p.tags || []} />
+      {p.sources?.length > 0 && <span className="note">{p.sources.length} source{p.sources.length > 1 ? 's' : ''} linked</span>}
+      {reason && <span className="note reason">{reason}</span>}
       <div className="acts">
         <LikeButton type="post" id={p.id} liked={p.liked} count={p.like_count} />
         <Link to={`/post/${p.id}`} aria-label="Comments">{Icon.comment()}<span>{p.comment_count}</span></Link>

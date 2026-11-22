@@ -37,7 +37,7 @@ export function Terms() {
   return (
     <Page title="Terms and community rules">
       <h2>What this place is for</h2>
-      <p>The Peace Quilt collects true, first-hand stories of people who made peace possible. Share what you saw or did yourself.</p>
+      <p>Verum Agora connects people through information and public-interest subjects. Share what you know, cite your sources, and separate facts from opinions. Peace stories in the Peace Quilt collection should be first-hand.</p>
       <h2>Rules</h2>
       <p>Do not post anything that could put a person in danger, including exact locations, full names of people at risk or identifying photos. No hate, harassment, incitement to violence, illegal content or invented stories presented as true. Respect other people's consent: only share someone else's story with their permission.</p>
       <h2>Reporting and moderation</h2>

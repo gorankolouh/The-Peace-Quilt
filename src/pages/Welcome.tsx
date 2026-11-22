@@ -10,7 +10,7 @@ export default function Welcome() {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    supabase.from('stories_v').select('*', { count: 'exact', head: true }).then(({ count }) => setCount(count ?? null));
+    supabase.from('posts_v').select('id', { count: 'exact', head: true }).then(({ count }) => setCount(count ?? null));
   }, []);
 
   useEffect(() => {
@@ -55,19 +55,19 @@ export default function Welcome() {
     <section className="hero">
       <canvas ref={ref} className="hero-cv" aria-hidden="true" />
       <div className="in">
-        <span className="eyebrow">A living archive for peace</span>
-        <h1>The Peace<br /><em>Quilt</em></h1>
-        <p className="lead">Thousands of small, true stories from doctors, mothers, teachers and mediators. Sewn together, they become a pattern no one can ignore.</p>
+        <span className="eyebrow">An independent European social information network</span>
+        <h1>Verum<br /><em>Agora</em></h1>
+        <p className="lead">Where reality connects. Share information, ask questions and publish research, organised by subject instead of popularity, with no ads and no paid reach.</p>
         <div className="ctas">
-          {me ? <Link className="btn" to="/feed">Go to your feed</Link> : <Link className="btn" to="/signup">Join the quilt</Link>}
-          <Link className="btn ghost" to="/constellation">See the constellation</Link>
+          {me ? <Link className="btn" to="/feed">Go to your feed</Link> : <Link className="btn" to="/signup">Join Verum Agora</Link>}
+          <Link className="btn ghost" to="/subjects">Explore the 12 subjects</Link>
           {!me && <Link className="btn ghost" to="/login">Log in</Link>}
         </div>
-        {count !== null && count > 0 && <p className="note" style={{ marginTop: 16 }}>{count} pieces sewn so far.</p>}
+        {count !== null && count > 0 && <p className="note" style={{ marginTop: 16 }}>{count} contributions so far.</p>}
         <div className="pillars">
-          <div><b>One piece at a time</b><span>Share a story, a photo, a voice note or a long article.</span></div>
-          <div><b>Threads, not silos</b><span>Every piece is tagged by role, theme and region, so separate voices connect.</span></div>
-          <div><b>Safe by design</b><span>Consent per story, pseudonyms, and location data removed from photos before upload.</span></div>
+          <div><b>Subjects over personalities</b><span>Your feed follows the subjects you choose. Follower counts never decide what you see.</span></div>
+          <div><b>Connected information</b><span>Every contribution links to related discussions by subject, topic and country, so nothing gets lost in an endless feed.</span></div>
+          <div><b>Free, ad-free, European</b><span>No advertising, no boosted posts. Data stored in the EU. Open source.</span></div>
         </div>
         <p className="foot-links"><Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · <Link to="/imprint">Imprint</Link></p>
       </div>

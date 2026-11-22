@@ -9,6 +9,8 @@ import { Spinner } from './components/ui';
 import Welcome from './pages/Welcome';
 import Feed from './pages/Feed';
 import ConstellationPage from './pages/ConstellationPage';
+import { SubjectPage, SubjectsIndex } from './pages/Subjects';
+import Search from './pages/Search';
 import StoryPage from './pages/StoryPage';
 import PostPage from './pages/PostPage';
 import Compose from './pages/Compose';
@@ -38,7 +40,7 @@ function SetupGate({ children }: { children: JSX.Element }) {
 function NotConfigured() {
   return (
     <div className="col" style={{ paddingTop: 60 }}>
-      <h1>The Peace Quilt</h1>
+      <h1>Verum Agora</h1>
       <p className="sub">The app is not connected to its database yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the environment and redeploy.</p>
     </div>
   );
@@ -59,6 +61,11 @@ function App() {
           <Route path="/setup" element={<RequireAuth><Setup /></RequireAuth>} />
           <Route path="/feed" element={<Feed />} />
           <Route path="/constellation" element={<ConstellationPage />} />
+          <Route path="/peace-quilt" element={<ConstellationPage />} />
+          <Route path="/subjects" element={<SubjectsIndex />} />
+          <Route path="/s/:slug" element={<SubjectPage />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/post/:id/edit" element={<RequireAuth><Compose /></RequireAuth>} />
           <Route path="/story/:id" element={<StoryPage />} />
           <Route path="/post/:id" element={<PostPage />} />
           <Route path="/u/:username" element={<ProfilePage />} />
@@ -80,7 +87,7 @@ function App() {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {DEMO ? (
-      <MemoryRouter initialEntries={['/' + window.location.hash.slice(1).replace(/-/g, '/')]}>
+      <MemoryRouter initialEntries={['/' + window.location.hash.slice(1).replace('-', '/')]}>
         <AuthProvider>
           <App />
         </AuthProvider>

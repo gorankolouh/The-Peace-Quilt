@@ -10,7 +10,7 @@ export function Logo() {
   return (
     <Link className="logo" to="/">
       <span className="orb" aria-hidden="true" />
-      <b>The Peace Quilt</b>
+      <b>Verum Agora</b>
     </Link>
   );
 }
@@ -31,10 +31,14 @@ export function Layout() {
 
   const profilePath = me?.username ? `/u/${me.username}` : '/login';
   const items: [string, string, () => JSX.Element][] = [
-    ['/feed', 'Feed', Icon.feed],
-    ['/constellation', 'Constellation', Icon.star],
+    ['/feed', 'Home', Icon.feed],
+    ['/subjects', 'Subjects', Icon.grid],
     ['/messages', 'Messages', Icon.msg],
     [profilePath, me ? 'Profile' : 'Log in', Icon.user],
+  ];
+  const extra: [string, string, () => JSX.Element][] = [
+    ['/search', 'Search', Icon.search],
+    ['/peace-quilt', 'Peace Quilt', Icon.star],
   ];
 
   return (
@@ -49,9 +53,12 @@ export function Layout() {
               {label === 'Messages' && unread > 0 && <span className="badge">{unread}</span>}
             </NavLink>
           ))}
+          {extra.map(([to, label, ic]) => (
+            <NavLink key={label} to={to} className={({ isActive }) => (isActive ? 'on' : '')}>{ic()}{label}</NavLink>
+          ))}
           {me && <NavLink to="/settings" className={({ isActive }) => (isActive ? 'on' : '')}>{Icon.settings()}Settings</NavLink>}
         </nav>
-        <Link className="btn add" to="/new">Add your piece</Link>
+        <Link className="btn add" to="/new">Contribute</Link>
         <div className="foot">
           <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · <Link to="/imprint">Imprint</Link>
         </div>
@@ -59,6 +66,7 @@ export function Layout() {
       <main id="main">
         <div className="mtop">
           <Logo />
+          <Link to="/search" aria-label="Search" className="mtop-search">{Icon.search()}</Link>
           {me ? (
             <Link to={profilePath} aria-label="Your profile"><Avatar name={nameOf(me)} role={me.role} size={34} /></Link>
           ) : (
@@ -71,7 +79,7 @@ export function Layout() {
         {[items[0], items[1]].map(([to, label, ic]) => (
           <NavLink key={label} to={to} className={({ isActive }) => (isActive ? 'on' : '')}>{ic()}{label}</NavLink>
         ))}
-        <Link to="/new" className="plus" aria-label="Add your piece"><span>{Icon.plus()}</span></Link>
+        <Link to="/new" className="plus" aria-label="Contribute"><span>{Icon.plus()}</span></Link>
         {[items[2], items[3]].map(([to, label, ic]) => (
           <NavLink key={label} to={to} className={({ isActive }) => (isActive ? 'on' : '')}>
             {ic()}{label}{label === 'Messages' && unread > 0 && <span className="dot" aria-label={`${unread} unread`} />}

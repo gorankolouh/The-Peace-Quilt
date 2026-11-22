@@ -4,7 +4,8 @@ import { Logo } from '../components/Layout';
 import { ErrorNote } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { PROFILE_ROLES } from '../lib/constants';
-import { updateMyProfile } from '../lib/data';
+import { setInterests, updateMyProfile } from '../lib/data';
+import { InterestsPicker } from '../components/InterestsPicker';
 import { DEMO, supabase } from '../lib/supabase';
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
@@ -104,7 +105,7 @@ export function Signup() {
   }
   if (done) return <Shell title="Check your email"><p>We sent a confirmation link to <b>{email}</b>. Open it to finish creating your account.</p></Shell>;
   return (
-    <Shell title="Join the quilt">
+    <Shell title="Join Verum Agora">
       <GoogleButton next="/setup" />
       <div className="or"><span>or</span></div>
       <form className="cmp" onSubmit={submit}>
@@ -150,6 +151,7 @@ export function Setup() {
   const [name, setName] = useState(me?.display_name ?? '');
   const [role, setRole] = useState(me?.role ?? 'Member');
   const [bio, setBio] = useState('');
+  const [interests, setInt] = useState<number[]>([]);
   const [err, setErr] = useState<string | null>(null);
   if (!me) return null;
   async function submit(e: React.FormEvent) {
@@ -157,7 +159,9 @@ export function Setup() {
     const u = username.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,24}$/.test(u)) { setErr('Usernames use 3–24 lowercase letters, numbers or underscores.'); return; }
     try {
+      if (interests.length < 1) { setErr('Choose at least one subject for your home feed.'); return; }
       await updateMyProfile(me!.id, { username: u, display_name: name.trim(), role, bio: bio.trim() });
+      await setInterests(me!.id, interests);
       await refresh();
       nav('/feed');
     } catch (x) {
@@ -168,12 +172,16 @@ export function Setup() {
   return (
     <div className="col">
       <h1 className="h1">Set up your profile</h1>
-      <p className="sub">You can use a pseudonym. Your stories can still be shared without your name.</p>
+      <p className="sub">You can use a pseudonym. Choose the subjects you care about: Verum Agora connects you through subjects, not popularity.</p>
       <form className="cmp card" onSubmit={submit}>
         <label htmlFor="un">Username<input id="un" required value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. lena_mediates" autoCapitalize="none" /></label>
         <label htmlFor="dn">Display name<input id="dn" required maxLength={60} value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label htmlFor="rl">How do you take part?<select id="rl" value={role} onChange={(e) => setRole(e.target.value)}>{PROFILE_ROLES.map((r) => <option key={r}>{r}</option>)}</select></label>
         <label htmlFor="bi">Short bio (optional)<textarea id="bi" maxLength={280} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Avoid details that reveal exactly where you live." /></label>
+        <fieldset className="radios">
+          <legend>Which subjects interest you? Your home feed is built from these.</legend>
+          <InterestsPicker value={interests} onChange={setInt} />
+        </fieldset>
         <ErrorNote error={err} />
         <button className="btn">Save and continue</button>
       </form>

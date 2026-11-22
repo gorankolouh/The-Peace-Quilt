@@ -36,8 +36,8 @@ export default function ConstellationPage() {
     <div className="col wide">
       <div className="pagehead">
         <div>
-          <h1 className="h1">The constellation</h1>
-          {stories && <p className="sub">{stories.length} pieces · {threads.length} threads. Tap any piece.</p>}
+          <h1 className="h1">The Peace Quilt</h1>
+          {stories && <p className="sub">A collection in <Link to="/s/peace-international">Peace &amp; International Affairs</Link>. {stories.length} pieces · {threads.length} threads. Tap any piece.</p>}
         </div>
         <div className="tabs">
           <button className={'tab' + (mode === 0 ? ' on' : '')} onClick={() => setMode(0)}>Quilt</button>

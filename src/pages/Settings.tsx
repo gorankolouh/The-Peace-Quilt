@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { InterestsPicker } from '../components/InterestsPicker';
 import { useNavigate } from 'react-router-dom';
 import { ErrorNote } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { PROFILE_ROLES } from '../lib/constants';
-import { deleteMyAccount, exportMyData, updateMyProfile } from '../lib/data';
+import { deleteMyAccount, exportMyData, getInterests, setInterests, updateMyProfile } from '../lib/data';
 import { supabase } from '../lib/supabase';
 
 export default function Settings() {
@@ -16,7 +17,13 @@ export default function Settings() {
   const [err, setErr] = useState<string | null>(null);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [confirm, setConfirm] = useState('');
+  const [interests, setInt] = useState<number[]>([]);
+  const [intSaved, setIntSaved] = useState(false);
+  useEffect(() => { if (me) getInterests(me.id).then(setInt).catch(() => {}); }, [me]);
   if (!me) return null;
+  async function saveInterests() {
+    try { await setInterests(me!.id, interests); setIntSaved(true); setTimeout(() => setIntSaved(false), 2000); } catch (x) { setErr((x as Error).message); }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -44,12 +51,19 @@ export default function Settings() {
         <div className="row"><button className="btn">Save</button>{saved && <span className="ok">Saved</span>}</div>
       </form>
 
+      <section className="card" id="interests">
+        <h2 className="h2" style={{ margin: 0 }}>My interests</h2>
+        <p className="sub">Your home feed shows contributions from these subjects, from anyone.</p>
+        <InterestsPicker value={interests} onChange={setInt} />
+        <div className="row"><button className="btn" onClick={saveInterests}>Save interests</button>{intSaved && <span className="ok">Saved</span>}</div>
+      </section>
+
       <section className="card">
         <h2 className="h2" style={{ margin: 0 }}>Your data</h2>
         <p className="sub">Download everything you have shared: profile, pieces, posts, comments, likes, follows and the messages you sent.</p>
         <div className="row">
           <button className="btn ghost" onClick={doExport}>Prepare my data</button>
-          {exportUrl && <a className="btn" href={exportUrl} download="peace-quilt-my-data.json">Download file</a>}
+          {exportUrl && <a className="btn" href={exportUrl} download="verum-agora-my-data.json">Download file</a>}
         </div>
       </section>
 
