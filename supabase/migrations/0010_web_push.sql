@@ -87,3 +87,7 @@ drop trigger if exists push_messages on public.messages;
 create trigger push_messages after insert on public.messages for each row execute function public.push_hook();
 drop trigger if exists push_notifications on public.notifications;
 create trigger push_notifications after insert on public.notifications for each row execute function public.push_hook();
+
+-- The push Edge Function reads these with the service role; newer projects need explicit grants.
+grant select on public.messages, public.conversation_members, public.notifications, public.profiles, public.push_subscriptions to service_role;
+grant delete on public.push_subscriptions to service_role;
