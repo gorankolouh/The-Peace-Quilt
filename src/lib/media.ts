@@ -80,7 +80,7 @@ export async function uploadAvatar(me: string, file: File, oldPath: string | nul
   const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('Could not process the photo'))), 'image/jpeg', 0.86));
   const path = `${me}/${crypto.randomUUID()}.jpg`;
   const { error } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(/bucket/i.test(error.message) ? 'Profile photos are not switched on yet: the database update (0004) still needs to be run.' : error.message);
   const { error: e2 } = await supabase.from('profiles').update({ avatar_url: path }).eq('id', me);
   if (e2) { await supabase.storage.from('avatars').remove([path]); throw new Error(e2.message); }
   if (oldPath) await supabase.storage.from('avatars').remove([oldPath]);

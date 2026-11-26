@@ -215,10 +215,9 @@ export async function conversationOther(conv: string, me: string): Promise<strin
   return other;
 }
 export async function sendMessage(me: string, conv: string, body: string, attachment?: { path: string; kind: string; name: string } | null) {
-  check(await supabase.from('messages').insert({
-    conversation_id: conv, sender_id: me, body,
-    attachment_path: attachment?.path ?? null, attachment_kind: attachment?.kind ?? null, attachment_name: attachment?.name ?? null,
-  }));
+  const row: Record<string, unknown> = { conversation_id: conv, sender_id: me, body };
+  if (attachment) Object.assign(row, { attachment_path: attachment.path, attachment_kind: attachment.kind, attachment_name: attachment.name });
+  check(await supabase.from('messages').insert(row));
 }
 export async function markRead(conv: string) {
   await supabase.rpc('mark_read', { conv });
