@@ -200,3 +200,6 @@ select
   exists (select 1 from public.fact_reviews r where r.post_id = p.id and r.status = 'correction') as signal_correction
 from public.posts p
 where p.author_id = auth.uid() or not p.hidden;
+
+-- The translate Edge Function writes the cache with the service role; newer projects need an explicit grant.
+grant select, insert, update, delete on public.translations to service_role;
