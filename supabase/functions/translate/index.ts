@@ -12,6 +12,15 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+// Works with both the legacy key names and the newer publishable/secret key variables.
+function envKey(legacy: string, modern: string): string {
+  const direct = Deno.env.get(legacy);
+  if (direct) return direct;
+  const raw = Deno.env.get(modern);
+  if (!raw) return '';
+  try { const v = JSON.parse(raw); return typeof v === 'string' ? v : (v.default ?? Object.values(v)[0] ?? '') as string; }
+  catch { return raw; }
+}
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
@@ -31,14 +40,14 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get('SUPABASE_URL')!;
   // Read the post as the caller, so hidden or restricted posts are never translated for someone who cannot see them.
-  const asCaller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {
+  const asCaller = createClient(url, envKey('SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEYS'), {
     global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
   });
   const { data: post } = await asCaller.from('posts_v').select('id, title, body, language').eq('id', postId).maybeSingle();
   if (!post) return reply({ error: 'Not found' }, 404);
   if (post.language === target) return reply({ title: post.title, body: post.body, engine: 'original' });
 
-  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const admin = createClient(url, envKey('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEYS'));
   const { data: cached } = await admin.from('translations').select('title, body, engine').eq('post_id', postId).eq('lang', target).maybeSingle();
   if (cached) return reply(cached);
 
