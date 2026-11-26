@@ -62,6 +62,16 @@ export default function Chat() {
 
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [msgs]);
 
+  // Phone layout: full-screen conversation like a chat app (no bottom menu), and keep the
+  // newest message visible when the keyboard opens or closes.
+  useEffect(() => {
+    document.body.classList.add('in-chat');
+    const vv = window.visualViewport;
+    const keep = () => requestAnimationFrame(() => end.current?.scrollIntoView({ block: 'end' }));
+    vv?.addEventListener('resize', keep);
+    return () => { document.body.classList.remove('in-chat'); vv?.removeEventListener('resize', keep); };
+  }, []);
+
   function insertEmoji(e: string) {
     const el = input.current;
     if (!el) { setText((t) => t + e); return; }

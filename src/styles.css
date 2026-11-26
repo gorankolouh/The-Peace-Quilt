@@ -514,3 +514,19 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 .cover.photo { height: auto; aspect-ratio: 16 / 9; }
 .cover.photo .media, .cover.photo .photo { width: 100%; height: 100%; max-height: none; object-fit: cover; border-radius: 0; }
 video.media { object-fit: contain; background: #000; } /* never crop portrait recordings */
+
+/* Conversation screen on phones: full height, messages scroll, input sits right above the keyboard. */
+@media (max-width: 900px) {
+  body.in-chat { overflow: hidden; }
+  body.in-chat .bottom, body.in-chat .mtop { display: none; }
+  body.in-chat .chat-page {
+    position: fixed; inset: 0; z-index: 6; max-width: none; height: 100dvh;
+    display: flex; flex-direction: column; gap: 8px; background: var(--bg);
+    padding: calc(10px + env(safe-area-inset-top)) 12px calc(8px + env(safe-area-inset-bottom));
+    animation: none;
+  }
+  body.in-chat .chat-page > * { flex-shrink: 0; animation: none; }
+  body.in-chat .chat-page > .chat { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 2px; }
+  body.in-chat .chat-page .send { position: static; padding: 0; }
+  body.in-chat .chat-page .back { padding: 2px 0; }
+}
