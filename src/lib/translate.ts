@@ -26,7 +26,7 @@ async function onDevice(text: { title: string | null; body: string }, from: stri
   const tr = await T.create({ ...opts, monitor(m) { m.addEventListener('downloadprogress', (e) => onProgress?.((e as ProgressEvent).loaded)); } });
   const paras = text.body.split(/\n{2,}/);
   const out: string[] = [];
-  for (const p of paras) out.push(p.trim() ? await tr.translate(p) : p); // paragraph by paragraph keeps the structure
+  for (const p of paras) out.push(p.trim() && !p.trim().startsWith('[photo:') ? await tr.translate(p) : p); // paragraph by paragraph keeps the structure
   return { title: text.title ? await tr.translate(text.title) : null, body: out.join('\n\n') };
 }
 

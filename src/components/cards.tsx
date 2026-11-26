@@ -7,6 +7,7 @@ import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 import { Signals } from './transparency';
 import { addComment, cachedProfile, deleteComment, getComments, report, setLike } from '../lib/data';
 import { nameOf, readMinutes, timeAgo } from '../lib/format';
+import { plainText } from '../lib/body';
 import type { Comment, Post, Region, Story, Theme } from '../lib/types';
 import { Avatar, Chip, ErrorNote, Icon, MediaView, Modal, RoleChip } from './ui';
 
@@ -160,9 +161,9 @@ export function PostCard({ p, reason }: { p: Post; reason?: string }) {
         <Link className="art" to={`/post/${p.id}`}>
           <div className="cover" aria-hidden="true"><CoverArt seed={p.id} /></div>
           <div className="txt">
-            <span className="eyebrow muted">{POST_KINDS[p.kind]} · {readMinutes(p.body)} min read</span>
+            <span className="eyebrow muted">{POST_KINDS[p.kind]} · {readMinutes(plainText(p.body))} min read</span>
             <h3>{p.title}</h3>
-            <p>{p.body.slice(0, 200)}{p.body.length > 200 ? '…' : ''}</p>
+            <p>{plainText(p.body).slice(0, 200)}{plainText(p.body).length > 200 ? '…' : ''}</p>
           </div>
         </Link>
       ) : (

@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { CONSENT_LABEL, COUNTRIES, LANGUAGES, POST_KINDS, STORY_ROLES } from '../lib/constants';
 import { createPost, createStory, getPost, getRegions, getThemes, updatePost } from '../lib/data';
 import { kindOf, removeMedia, uploadMedia } from '../lib/media';
+import { photoLine } from '../lib/body';
 import type { ClaimInput, Nature, PostKind, Region, Source, Theme } from '../lib/types';
 import { ClaimFields, NATURE_LABEL, emptyClaim } from '../components/transparency';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
@@ -77,6 +78,23 @@ export default function Compose() {
       }
       return s.length >= 4 ? s : [...s, id];
     });
+  }
+
+  // Photos inside the text: uploaded right away, then placed at the cursor as their own paragraph.
+  const [inlineBusy, setInlineBusy] = useState(false);
+  async function addInlinePhoto(f: File) {
+    if (kindOf(f) !== 'photo') { setErr('Only photos can be placed inside the text.'); return; }
+    setErr(null); setInlineBusy(true);
+    try {
+      const up = await uploadMedia(me!.id, f);
+      const ta = document.getElementById('b') as HTMLTextAreaElement | null;
+      const at = ta ? ta.selectionEnd : body.length;
+      setBody((cur) => {
+        const before = cur.slice(0, at).replace(/\s*$/, ''); const after = cur.slice(at).replace(/^\s*/, '');
+        return [before, photoLine(up.path), after].filter(Boolean).join('\n\n');
+      });
+    } catch (e2) { setErr(e2 instanceof Error ? e2.message : 'Could not add the photo.'); }
+    finally { setInlineBusy(false); }
   }
 
   function pick(f: File | null) {
@@ -152,6 +170,11 @@ export default function Compose() {
             placeholder={kind === 'article' || kind === 'research' ? 'Separate paragraphs with an empty line.' : ''} />
           <span className="note right">{body.length} / {MAX[kind]}</span>
         </label>
+        {(kind === 'article' || kind === 'research') && me && (
+          <label className="btn ghost sm add-inline">{inlineBusy ? 'Adding photo…' : 'Add photo here'}
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden disabled={inlineBusy} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) addInlinePhoto(f); }} />
+          </label>
+        )}
 
         {!isStory && (
           <>

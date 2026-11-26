@@ -12,6 +12,7 @@ import { TransparencyPanel } from '../components/transparency';
 import { useI18n } from '../lib/i18n';
 import { translatePost, type Translation } from '../lib/translate';
 import { LinkTerms } from '../components/LinkTerms';
+import { blocks, inlinePhotos, mergeTranslation, plainText } from '../lib/body';
 
 function hostOf(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
@@ -81,6 +82,7 @@ export default function PostPage() {
   async function remove() {
     if (!window.confirm('Delete this permanently?')) return;
     if (p!.media_path) await removeMedia(p!.media_path);
+    for (const path of inlinePhotos(p!.body)) await removeMedia(path).catch(() => undefined);
     await deletePost(p!.id);
     nav('/feed');
   }
@@ -97,14 +99,16 @@ export default function PostPage() {
     <article className={long ? 'read' : 'col'}>
       <button className="back" onClick={() => nav(-1)}>{Icon.back()}Back</button>
       {long && <div className="cover big" aria-hidden="true"><CoverArt seed={p.id} /></div>}
-      <span className="eyebrow block">{POST_KINDS[p.kind]}{long ? ` · ${readMinutes(p.body)} min read` : ''}</span>
+      <span className="eyebrow block">{POST_KINDS[p.kind]}{long ? ` · ${readMinutes(plainText(p.body))} min read` : ''}</span>
       {(tr?.title ?? p.title) && <h1 className={long ? '' : 'h1'} lang={tr ? lang : p.language}>{tr?.title ?? p.title}</h1>}
       {author}
       <TranslateBar p={p} tr={tr} setTr={setTr} />
       <SubjectChips ids={p.subject_ids} subtopicIds={p.subtopic_ids} tags={p.tags} />
       <LinkTerms tags={p.tags} />
       {p.media_path && p.media_kind && <MediaView path={p.media_path} kind={p.media_kind} />}
-      <div className={(long ? 'prose' : 'prose short') + (tr ? ' translated' : '')} lang={tr ? lang : p.language}>{(tr?.body ?? p.body).split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}</div>
+      <div className={(long ? 'prose' : 'prose short') + (tr ? ' translated' : '')} lang={tr ? lang : p.language}>{(tr ? mergeTranslation(p.body, tr.body) : blocks(p.body)).map((b, i) => b.type === 'photo'
+        ? <figure key={i} className="inline-photo"><MediaView path={b.path} kind="photo" label={b.caption || p.title || undefined} />{b.caption && <figcaption>{b.caption}</figcaption>}</figure>
+        : <p key={i}>{b.text}</p>)}</div>
       {p.sources?.length > 0 && (
         <section className="card sources" aria-label="Sources">
           <b>Sources and references</b>

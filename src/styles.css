@@ -505,3 +505,9 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 @keyframes mark-glow { 0%, 100% { filter: drop-shadow(0 0 5px #C6F43255); } 50% { filter: drop-shadow(0 0 10px #C6F43299); } }
 .collection .orb { width: 40px; height: 40px; }
 @media (prefers-reduced-motion: reduce) { .orb { animation: none; } }
+
+/* photos inside articles */
+.inline-photo { margin: 6px 0 22px; max-width: 65ch; }
+.inline-photo .media { max-height: none; object-fit: contain; }
+.inline-photo figcaption { font-size: 13px; color: var(--muted, #9AA096); margin-top: 6px; }
+.cmp .add-inline { margin-top: 6px; }
