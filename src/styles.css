@@ -496,3 +496,9 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 .conn { text-decoration: none; color: inherit; gap: 6px; }
 .conn:hover { border-color: #C6F43255; }
 .push-nudge { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-color: #C6F43255; }
+
+/* Brand mark: two speech bubbles forming a keyhole (replaces the lime orb everywhere). */
+.orb { width: 30px; height: 30px; border-radius: 0; background: url(/mark.png) center / contain no-repeat; box-shadow: none; filter: drop-shadow(0 0 6px #C6F43266); animation: mark-glow 4s ease-in-out infinite; }
+@keyframes mark-glow { 0%, 100% { filter: drop-shadow(0 0 5px #C6F43255); } 50% { filter: drop-shadow(0 0 10px #C6F43299); } }
+.collection .orb { width: 40px; height: 40px; }
+@media (prefers-reduced-motion: reduce) { .orb { animation: none; } }
