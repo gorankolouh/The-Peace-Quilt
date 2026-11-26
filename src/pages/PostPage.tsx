@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Comments, CoverArt, LikeButton, PostCard, ReportButton, SubjectChips } from '../components/cards';
+import { Comments, CoverArt, LikeButton, PostCard, ReportButton, ShareButton, SubjectChips } from '../components/cards';
 import { Avatar, ErrorNote, Icon, MediaView, RoleChip, Spinner } from '../components/ui';
 import { POST_KINDS, countryName, languageName } from '../lib/constants';
 import { cachedProfile, deletePost, getPost, relatedPosts } from '../lib/data';
@@ -104,6 +104,7 @@ export default function PostPage() {
       )}
       <div className="acts">
         <LikeButton type="post" id={p.id} liked={p.liked} count={p.like_count} />
+        <ShareButton path={`/post/${p.id}`} title={p.title || 'Verum Agora'} />
         <span className="spacer" />
         {p.is_mine ? (
           <>

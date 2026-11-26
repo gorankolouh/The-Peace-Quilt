@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PostCard } from '../components/cards';
-import { Empty, ErrorNote, Spinner } from '../components/ui';
+import { Avatar, Empty, ErrorNote, Spinner } from '../components/ui';
+import { nameOf } from '../lib/format';
+import { useT } from '../lib/i18n';
 import { COUNTRIES, LANGUAGES, POST_KINDS } from '../lib/constants';
-import { searchPosts } from '../lib/data';
-import type { Post } from '../lib/types';
+import { searchPeople, searchPosts } from '../lib/data';
+import type { Post, Profile } from '../lib/types';
 import { useSubjects } from '../lib/useSubjects';
 
 export default function Search() {
@@ -13,6 +15,8 @@ export default function Search() {
   const [q, setQ] = useState(sp.get('q') ?? '');
   const [results, setResults] = useState<Post[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [people, setPeople] = useState<Profile[]>([]);
+  const t = useT();
   const filters = {
     q: sp.get('q') ?? '',
     subject: sp.get('subject') ? Number(sp.get('subject')) : null,
@@ -20,12 +24,19 @@ export default function Search() {
     language: sp.get('lang'),
     kind: sp.get('kind'),
     tag: sp.get('tag'),
+    from: sp.get('from'),
+    to: sp.get('to'),
+    sort: sp.get('sort'),
   };
+  const year = new Date().getFullYear();
+  const years = Array.from({ length: Math.max(1, year - 2025) }, (_, i) => year - i);
+  const SORTS: [string, string][] = [['new', t('search.sort.new')], ['old', t('search.sort.old')], ['discussed', t('search.sort.discussed')], ['sourced', t('search.sort.sourced')]];
   const key = sp.toString();
 
   useEffect(() => {
     setResults(null); setErr(null);
     searchPosts(filters).then(setResults).catch((e) => setErr(e.message));
+    searchPeople(filters.q).then(setPeople).catch(() => setPeople([]));
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function set(name: string, value: string) {
@@ -33,14 +44,21 @@ export default function Search() {
     if (value) next.set(name, value); else next.delete(name);
     setSp(next);
   }
+  function setYear(y: number | null) {
+    const next = new URLSearchParams(sp);
+    if (y) { next.set('from', `${y}-01-01`); next.set('to', `${y}-12-31`); } else { next.delete('from'); next.delete('to'); }
+    setSp(next);
+  }
+  const activeYear = filters.from?.endsWith('-01-01') && filters.to === filters.from.slice(0, 4) + '-12-31' ? Number(filters.from.slice(0, 4)) : null;
 
   return (
     <div className="col">
-      <h1 className="h1">Search the archive</h1>
+      <h1 className="h1">{t('search.title')}</h1>
+      <p className="sub">{t('search.sub')}</p>
       <form className="send inline" role="search" onSubmit={(e) => { e.preventDefault(); set('q', q.trim()); }}>
         <label htmlFor="sq" className="sr">Search</label>
-        <input id="sq" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Keywords, e.g. school funding, AI act, housing" />
-        <button className="btn" type="submit">Search</button>
+        <input id="sq" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('search.placeholder')} />
+        <button className="btn" type="submit">{t('nav.search')}</button>
       </form>
       <div className="filters">
         <label htmlFor="fs">Subject<select id="fs" value={filters.subject ?? ''} onChange={(e) => set('subject', e.target.value)}>
@@ -55,13 +73,33 @@ export default function Search() {
         <label htmlFor="fk">Type<select id="fk" value={filters.kind ?? ''} onChange={(e) => set('kind', e.target.value)}>
           <option value="">All types</option>{Object.entries(POST_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select></label>
+        <label htmlFor="ff">{t('search.from')}<input id="ff" type="date" value={filters.from ?? ''} onChange={(e) => set('from', e.target.value)} /></label>
+        <label htmlFor="ft">{t('search.to')}<input id="ft" type="date" value={filters.to ?? ''} onChange={(e) => set('to', e.target.value)} /></label>
+        <label htmlFor="so">{t('search.sort')}<select id="so" value={filters.sort ?? 'new'} onChange={(e) => set('sort', e.target.value === 'new' ? '' : e.target.value)}>
+          {SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select></label>
       </div>
+      <div className="row archive-years" aria-label={t('search.archive')}>
+        <span className="note">{t('search.archive')}:</span>
+        <button className={'tab' + (!activeYear && !filters.from && !filters.to ? ' on' : '')} onClick={() => setYear(null)}>{t('subjects.all')}</button>
+        {years.map((y) => <button key={y} className={'tab' + (activeYear === y ? ' on' : '')} onClick={() => setYear(y)}>{y}</button>)}
+      </div>
+      {people.length > 0 && (
+        <div className="card people-hits">
+          <b className="note">{t('search.people')}</b>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
+            {people.map((p) => (
+              <Link key={p.id} to={`/u/${p.username}`} className="person-chip"><Avatar name={nameOf(p)} role={p.role} size={28} src={p.avatar_url} /><span>{nameOf(p)}</span></Link>
+            ))}
+          </div>
+        </div>
+      )}
       {filters.tag && <p className="note">Topic: <b>#{filters.tag}</b> <button className="linkbtn" onClick={() => set('tag', '')}>Clear</button></p>}
       <ErrorNote error={err} />
       {!results && !err && <Spinner />}
-      {results && <p className="note">{results.length} result{results.length === 1 ? '' : 's'}, newest first</p>}
+      {results && <p className="note">{results.length} {t('search.results')} · {SORTS.find(([k]) => k === (filters.sort ?? 'new'))?.[1]}</p>}
       {results?.map((p) => <PostCard key={p.id} p={p} />)}
-      {results && results.length === 0 && <Empty title="No matching contributions"><p className="sub">Try fewer words or remove a filter.</p></Empty>}
+      {results && results.length === 0 && <Empty title={t('search.none')}><p className="sub">{t('search.noneHelp')}</p></Empty>}
     </div>
   );
 }

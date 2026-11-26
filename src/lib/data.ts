@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Notification, Appeal, Claim, ClaimInput, Comment, Conflict, ContentReport, EventClaim, Evidence, Nature, Review, ReviewStatus, Conversation, FeedItem, Message, Post, PostKind, Profile, Region, Related, Source, Story, Subject, Subtopic, Theme } from './types';
+import type { ContributionRecord, ModerationRecord, TransparencyStats, Notification, Appeal, Claim, ClaimInput, Comment, Conflict, ContentReport, EventClaim, Evidence, Nature, Review, ReviewStatus, Conversation, FeedItem, Message, Post, PostKind, Profile, Region, Related, Source, Story, Subject, Subtopic, Theme } from './types';
 
 export const POST_COLS = 'id,author_id,kind,title,body,media_path,media_kind,created_at,is_mine,like_count,comment_count,liked,language,country,sources,updated_at,subject_ids,subtopic_ids,tags,nature,claim_count,signal_context,signal_conflict,signal_correction';
 
@@ -48,7 +48,7 @@ export async function suggestedProfiles(me: string | undefined): Promise<Profile
   rows.forEach((p) => profileCache.set(p.id, p));
   return rows;
 }
-export async function updateMyProfile(id: string, patch: Partial<Pick<Profile, 'username' | 'display_name' | 'role' | 'bio'>>) {
+export async function updateMyProfile(id: string, patch: Partial<Pick<Profile, 'username' | 'display_name' | 'role' | 'bio' | 'message_privacy'>>) {
   check(await supabase.from('profiles').update(patch).eq('id', id));
   profileCache.delete(id);
 }
@@ -339,7 +339,10 @@ export async function subjectCounts(): Promise<Record<number, number>> {
   rows.forEach((r) => { out[r.subject_id] = (out[r.subject_id] || 0) + 1; });
   return out;
 }
-export type SearchFilters = { q: string; subject?: number | null; country?: string | null; language?: string | null; kind?: string | null; tag?: string | null };
+export type SearchFilters = {
+  q: string; subject?: number | null; country?: string | null; language?: string | null; kind?: string | null; tag?: string | null;
+  from?: string | null; to?: string | null; sort?: string | null; author?: string | null;
+};
 export async function searchPosts(f: SearchFilters): Promise<Post[]> {
   let q = supabase.from('posts_v').select(POST_COLS);
   if (f.q.trim()) q = q.textSearch('search', f.q.trim(), { type: 'websearch', config: 'simple' });
@@ -348,7 +351,20 @@ export async function searchPosts(f: SearchFilters): Promise<Post[]> {
   if (f.language) q = q.eq('language', f.language);
   if (f.kind) q = q.eq('kind', f.kind);
   if (f.tag) q = q.contains('tags', [f.tag]);
-  return withAuthors(check(await q.order('created_at', { ascending: false }).limit(50)) as Post[]);
+  if (f.author) q = q.eq('author_id', f.author);
+  if (f.from) q = q.gte('created_at', f.from);
+  if (f.to) q = q.lt('created_at', new Date(new Date(f.to).getTime() + 86400000).toISOString().slice(0, 10));
+  const sort = f.sort ?? 'new';
+  if (sort === 'discussed') q = q.order('comment_count', { ascending: false }).order('created_at', { ascending: false });
+  else if (sort === 'sourced') q = q.order('claim_count', { ascending: false }).order('created_at', { ascending: false });
+  else q = q.order('created_at', { ascending: sort === 'old' });
+  return withAuthors(check(await q.limit(50)) as Post[]);
+}
+/** People whose name or username matches; follower counts are deliberately not shown. */
+export async function searchPeople(term: string): Promise<Profile[]> {
+  const t = term.trim().replace(/[%,()]/g, '');
+  if (t.length < 2) return [];
+  return check(await supabase.from('profiles').select('*').or(`username.ilike.%${t}%,display_name.ilike.%${t}%`).not('username', 'is', null).limit(8)) as Profile[];
 }
 export async function relatedPosts(id: number): Promise<Related[]> {
   const rows = check(await supabase.rpc('related_posts', { pid: id, max_results: 10 })) as {
@@ -443,8 +459,11 @@ export async function openAppeals(): Promise<Appeal[]> {
 export async function decideAppeal(id: number, status: 'upheld' | 'overturned', text: string) {
   check(await supabase.from('appeals').update({ status, decision_text: text.trim() }).eq('id', id));
 }
+const URGENT = ['child_safety', 'threat', 'danger'];
 export async function contentReports(): Promise<ContentReport[]> {
-  return check(await supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(200)) as ContentReport[];
+  const rows = check(await supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(200)) as ContentReport[];
+  // Urgent categories first among open reports.
+  return rows.sort((a, b) => Number(b.status === 'open' && URGENT.includes(b.reason)) - Number(a.status === 'open' && URGENT.includes(a.reason)));
 }
 export async function decideReport(id: number, status: 'actioned' | 'dismissed', decision: string) {
   check(await supabase.from('reports').update({ status, decision: decision.trim(), decided_at: new Date().toISOString() }).eq('id', id));
@@ -470,4 +489,16 @@ export async function markNotificationsRead() {
 }
 export async function clearNotifications() {
   check(await supabase.from('notifications').delete().not('id', 'is', null));
+}
+
+
+/* ---------- Phase 4: moderation records, public figures, acknowledgments ---------- */
+export async function moderationLog(): Promise<ModerationRecord[]> {
+  return check(await supabase.from('moderation_log').select('*').order('created_at', { ascending: false }).limit(300)) as ModerationRecord[];
+}
+export async function transparencyStats(): Promise<TransparencyStats> {
+  return check(await supabase.rpc('transparency_stats')) as TransparencyStats;
+}
+export async function contributionRecord(uid: string): Promise<ContributionRecord> {
+  return check(await supabase.rpc('contribution_record', { uid })) as ContributionRecord;
 }

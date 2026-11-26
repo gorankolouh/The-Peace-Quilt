@@ -447,3 +447,31 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 .nav a > svg { flex-shrink: 0; }
 .nav a .lbl { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .nav .badge { flex-shrink: 0; }
+
+/* ---------- Phase 4: share, records, figures, archive ---------- */
+.acts .share { position: relative; }
+.acts .share .copied { position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); white-space: nowrap; background: var(--lime); color: #0A0B0A; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.record { display: flex; flex-direction: column; gap: 8px; }
+.record-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.record-item { background: var(--s2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--muted); }
+.record-item b { color: var(--lime); margin-right: 2px; }
+.figures h2 { margin-top: 0; }
+.fig-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 12px 0 16px; }
+.fig-top div { background: var(--s2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.fig-top b { font-size: 24px; color: var(--lime); }
+.fig-top span { font-size: 12px; color: var(--muted); }
+.fig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.fig table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+.fig td { padding: 5px 0; border-bottom: 1px solid var(--line); }
+.fig td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.log-list { padding: 0; }
+.log-row { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.log-row:last-child { border-bottom: 0; }
+.log-row p { margin: 4px 0 0; font-size: 14px; }
+.archive-years { flex-wrap: wrap; gap: 6px; align-items: center; }
+.people-hits { display: flex; flex-direction: column; gap: 8px; }
+.person-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--s2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; }
+.person-chip:hover { border-color: var(--lime); }
+.note.warn { color: #FCD34D; }
+.filters input[type="date"] { color-scheme: dark; }
+.fig { display: flex; flex-direction: column; gap: 4px; }

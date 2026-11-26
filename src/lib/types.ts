@@ -8,6 +8,7 @@ export type Profile = {
   is_moderator: boolean;
   created_at: string;
   avatar_url?: string | null;
+  message_privacy?: 'everyone' | 'following' | 'nobody';
 };
 export type Theme = { id: number; name: string; short: string };
 export type Region = { id: number; name: string };
@@ -99,3 +100,11 @@ export type Message = {
   id: number; conversation_id: string; sender_id: string; body: string; created_at: string;
   attachment_path?: string | null; attachment_kind?: MediaKind | null; attachment_name?: string | null;
 };
+
+export type ModerationRecord = { id: number; moderator_id: string | null; action: string; target_type: string; target_id: string; category: string | null; statement: string | null; created_at: string };
+export type TransparencyStats = {
+  since: string; reports_by_reason: Record<string, number>; reports_by_status: Record<string, number>;
+  reviews_by_status: Record<string, number>; appeals_by_status: Record<string, number>;
+  median_hours_to_decision: number | null; content_hidden: number; contributions: number; contributors: number;
+};
+export type ContributionRecord = { evidence: number; claims: number; research: number; articles: number; sourced: number; answers: number };

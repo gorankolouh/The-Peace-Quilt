@@ -22,6 +22,7 @@ import Chat from './pages/Chat';
 import ProfilePage from './pages/ProfilePage';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
+import Rules from './pages/Rules';
 import { I18nProvider } from './lib/i18n';
 import { Login, Signup, ResetPassword, Setup } from './pages/Auth';
 import { Imprint, Privacy, Terms } from './pages/Legal';
@@ -82,6 +83,7 @@ function App() {
           <Route path="/messages/:id" element={<RequireAuth><Chat /></RequireAuth>} />
           <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+          <Route path="/rules" element={<Rules />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/imprint" element={<Imprint />} />

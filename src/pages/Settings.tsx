@@ -10,7 +10,7 @@ import { useAuth } from '../lib/auth';
 import { PROFILE_ROLES } from '../lib/constants';
 import { deleteMyAccount, exportMyData, getInterests, setInterests, updateMyProfile } from '../lib/data';
 import { supabase } from '../lib/supabase';
-import { LANGS, useI18n } from '../lib/i18n';
+import { LANGS, useI18n, useT as useT2 } from '../lib/i18n';
 
 export default function Settings() {
   const { me, refresh } = useAuth();
@@ -78,6 +78,8 @@ export default function Settings() {
 
       <LanguageCard />
 
+      <PrivacyCard />
+
       <section className="card">
         <h2 className="h2" style={{ margin: 0 }}>Notifications</h2>
         <p className="sub">When a new message arrives, you see a pop-up and the unread count in the tab title.</p>
@@ -129,6 +131,32 @@ function LanguageCard() {
           <button key={code} type="button" role="radio" aria-checked={lang === code} className={'lang-opt' + (lang === code ? ' on' : '')} onClick={() => setLang(code)} lang={code}>{name}</button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function PrivacyCard() {
+  const { me, refresh } = useAuth();
+  const t = useT2();
+  const [val, setVal] = useState(me?.message_privacy ?? 'everyone');
+  const [ok, setOk] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!me) return null;
+  async function pick(v: 'everyone' | 'following' | 'nobody') {
+    setVal(v); setErr(null);
+    try { await updateMyProfile(me!.id, { message_privacy: v }); await refresh(); setOk(true); setTimeout(() => setOk(false), 2000); }
+    catch (x) { setErr((x as Error).message); }
+  }
+  return (
+    <section className="card">
+      <h2 className="h2" style={{ margin: 0 }}>{t('privacy.title')}</h2>
+      <p className="sub">{t('privacy.help')}</p>
+      {(['everyone', 'following', 'nobody'] as const).map((v) => (
+        <label key={v} className="radio"><input type="radio" name="msgp" checked={val === v} onChange={() => pick(v)} />{t('privacy.' + v)}</label>
+      ))}
+      {ok && <p className="ok">{t('privacy.saved')}</p>}
+      <ErrorNote error={err} />
+      <p className="note">{t('privacy.note')}</p>
     </section>
   );
 }

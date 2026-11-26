@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Comments, LikeButton, ReportButton } from '../components/cards';
+import { Comments, LikeButton, ReportButton, ShareButton } from '../components/cards';
 import { buildThreads, connectedTo } from '../components/Constellation';
 import { Avatar, Chip, ErrorNote, Icon, MediaView, RoleChip, Spinner } from '../components/ui';
 import { CONSENT_LABEL, CONSENT_SHORT } from '../lib/constants';
@@ -72,6 +72,7 @@ export default function StoryPage() {
       <p className="story-body">{s.body}</p>
       <div className="acts">
         <LikeButton type="story" id={s.id} liked={s.liked} count={s.like_count} />
+        <ShareButton path={`/story/${s.id}`} title={s.title} />
         <span className="spacer" />
         {!s.is_mine && <ReportButton type="story" id={s.id} />}
       </div>

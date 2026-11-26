@@ -161,6 +161,10 @@ const db: Record<string, Row[]> = {
     { id: 3, author_id: P(3), target_type: 'post', target_id: 2, body: 'Mostly yes: Dutch schools receive a lump sum per pupil. I linked a comparison in my research post on German funding.', hidden: false, created_at: ago(3) },
     { id: 4, author_id: P(5), target_type: 'post', target_id: 1, parent_id: 2, body: 'The 2022 figures are in the same KMK series. I can add them as a second table.', hidden: false, created_at: ago(1.2) },
   ],
+  moderation_log: [
+    { id: 1, moderator_id: DEMO_ME, action: 'review_context', target_type: 'post', target_id: '5', category: 'fact_review', statement: 'Both figures are documented. Context added so readers can compare definitions.', created_at: ago(6) },
+    { id: 2, moderator_id: DEMO_ME, action: 'report_dismissed', target_type: 'comment', target_id: '3', category: 'spam', statement: 'An ordinary answer with a relevant link. Not spam.', created_at: ago(30) },
+  ],
   notifications: [
     { id: 1, user_id: DEMO_ME, kind: 'follow', actor_id: P(6), target_type: null, target_id: null, text: null, read_at: null, created_at: ago(0.3) },
     { id: 2, user_id: DEMO_ME, kind: 'comment', actor_id: P(4), target_type: 'post', target_id: 1, text: 'Very useful. Do you have the same table for 2022, to compare?', read_at: null, created_at: ago(1.5) },
@@ -249,6 +253,9 @@ function test(row: Row, col: string, expr: string): boolean {
   if (op === 'eq') ok = String(cell) === parseVal(raw);
   else if (op === 'neq') ok = String(cell) !== parseVal(raw);
   else if (op === 'is') ok = raw === 'null' ? cell == null : String(cell) === raw;
+  else if (op === 'gte') ok = String(cell) >= parseVal(raw);
+  else if (op === 'lt') ok = String(cell) < parseVal(raw);
+  else if (op === 'ilike') ok = String(cell ?? '').toLowerCase().includes(raw.replace(/%/g, '').replace(/\*/g, '').toLowerCase());
   else if (op === 'in') ok = raw.replace(/^\(|\)$/g, '').split(',').map(parseVal).includes(String(cell));
   else if (op === 'cs' || op === 'ov') {
     const want = raw.replace(/^\{|\}$/g, '').split(',').filter(Boolean).map(parseVal);
@@ -274,7 +281,7 @@ function filter(rows: Row[], params: URLSearchParams): Row[] {
   });
   const order = params.get('order');
   if (order) {
-    const [col, dir] = order.split('.');
+    const [col, dir] = order.split(',')[0].split('.');
     out = [...out].sort((a, b) => (a[col] > b[col] ? 1 : a[col] < b[col] ? -1 : 0) * (dir === 'desc' ? -1 : 1));
   }
   const limit = params.get('limit');
@@ -316,6 +323,25 @@ function rpc(fn: string, args: Row): unknown {
   }
   if (fn === 'delete_my_account') { me = null; return null; }
   if (fn === 'claim_conflicts') return conflictsFor(args.pid);
+  if (fn === 'transparency_stats') {
+    const count = (rows: Row[], k: string) => rows.reduce((o: Record<string, number>, r) => { o[r[k]] = (o[r[k]] || 0) + 1; return o; }, {});
+    return {
+      since: ago(365 * 24), reports_by_reason: { spam: 3, harassment: 2, privacy: 1, false: 1 }, reports_by_status: { dismissed: 4, actioned: 2, open: 1 },
+      reviews_by_status: count(db.fact_reviews, 'status'), appeals_by_status: count(db.appeals, 'status'),
+      median_hours_to_decision: 6.5, content_hidden: 2, contributions: db.posts.length, contributors: new Set(db.posts.map((p) => p.author_id)).size,
+    };
+  }
+  if (fn === 'contribution_record') {
+    const uid = args.uid;
+    const mine = db.posts.filter((p) => p.author_id === uid);
+    return {
+      evidence: db.claim_evidence.filter((e) => e.added_by === uid).length,
+      claims: db.claims.filter((c) => mine.some((p) => p.id === c.post_id)).length,
+      research: mine.filter((p) => p.kind === 'research').length, articles: mine.filter((p) => p.kind === 'article').length,
+      sourced: mine.filter((p) => (p.sources || []).length > 0).length,
+      answers: db.comments.filter((c) => c.author_id === uid && c.target_type === 'post' && db.posts.find((p) => p.id === c.target_id && p.kind === 'question' && p.author_id !== uid)).length,
+    };
+  }
   if (fn === 'event_claims') {
     return db.claims.filter((c) => c.event_tag === String(args.tag).toLowerCase()).map((c) => {
       const ev = db.claim_evidence.filter((e) => e.claim_id === c.id);

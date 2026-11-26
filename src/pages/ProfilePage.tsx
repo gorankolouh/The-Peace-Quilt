@@ -1,4 +1,5 @@
 import { useT } from '../lib/i18n';
+import type { ContributionRecord } from '../lib/types';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PostCard, ReportButton, StoryCard } from '../components/cards';
@@ -7,6 +8,7 @@ import { useAuth } from '../lib/auth';
 import {
   followCounts, followList, getProfileByUsername, getRegions, getThemes, isBlocked, isFollowing, myFollowingSet,
   postsBy, setBlock, setFollow, startConversation, storiesBy,
+  contributionRecord,
 } from '../lib/data';
 import { nameOf } from '../lib/format';
 import { removeAvatar, uploadAvatar } from '../lib/media';
@@ -176,7 +178,7 @@ export default function ProfilePage() {
           ) : (
             <>
               {!blocked && <button className={'btn' + (following ? ' ghost' : '')} onClick={toggleFollow} disabled={busyFollow} aria-pressed={following}>{following ? t('btn.following') : t('btn.follow')}</button>}
-              {!blocked && <button className="btn ghost" onClick={message}>{t('btn.message')}</button>}
+              {!blocked && p.message_privacy !== 'nobody' && <button className="btn ghost" onClick={message}>{t('btn.message')}</button>}
               {me && <button className="btn ghost sm" onClick={toggleBlock}>{blocked ? t('btn.unblock') : t('btn.block')}</button>}
               <div className="acts tight"><ReportButton type="profile" id={p.id} label="Report this profile" /></div>
             </>
@@ -184,6 +186,7 @@ export default function ProfilePage() {
         </div>
         <ErrorNote error={err} />
       </section>
+      <RecordCard uid={p.id} />
       <div className="tabs">
         <button className={'tab' + (tab === 'posts' ? ' on' : '')} onClick={() => setTab('posts')}>{t('profile.contributions')}</button>
         <button className={'tab' + (tab === 'pieces' ? ' on' : '')} onClick={() => setTab('pieces')}>Peace Quilt pieces</button>
@@ -193,5 +196,27 @@ export default function ProfilePage() {
       {mine && <p className="note">Pieces you shared without your name are not listed on your public profile.</p>}
       {list && <PeopleList ownerId={p.id} which={list} onClose={() => setList(null)} />}
     </div>
+  );
+}
+
+/** Noncommercial acknowledgment of what someone has added to the shared record. No rankings, no follower figures. */
+function RecordCard({ uid }: { uid: string }) {
+  const t = useT();
+  const [r, setR] = useState<ContributionRecord | null>(null);
+  useEffect(() => { contributionRecord(uid).then(setR).catch(() => setR(null)); }, [uid]);
+  if (!r) return null;
+  const items: [number, string][] = ([
+    [r.evidence, t('record.evidence')], [r.claims, t('record.claims')], [r.sourced, t('record.sourced')],
+    [r.research, t('record.research')], [r.articles, t('record.articles')], [r.answers, t('record.answers')],
+  ] as [number, string][]).filter(([n]) => n > 0);
+  if (!items.length) return null;
+  return (
+    <section className="card record">
+      <b>{t('record.title')}</b>
+      <div className="record-items">
+        {items.map(([n, l]) => <span key={l} className="record-item"><b>{n}</b> {l}</span>)}
+      </div>
+      <span className="note">{t('record.help')}</span>
+    </section>
   );
 }

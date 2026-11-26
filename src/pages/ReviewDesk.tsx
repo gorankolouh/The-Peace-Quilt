@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { Empty, ErrorNote, Spinner } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { REPORT_REASONS } from '../lib/constants';
-import { contentReports, decideAppeal, decideReport, decideReview, openAppeals, openReviews, setHidden } from '../lib/data';
-import { timeAgo } from '../lib/format';
-import type { Appeal, ContentReport, Review, ReviewStatus } from '../lib/types';
+import { cachedProfile, contentReports, decideAppeal, decideReport, decideReview, getProfiles, moderationLog, openAppeals, openReviews, setHidden } from '../lib/data';
+import { nameOf, timeAgo } from '../lib/format';
+import type { Appeal, ContentReport, ModerationRecord, Review, ReviewStatus } from '../lib/types';
 
 function Decide({ options, onDecide }: { options: [string, string][]; onDecide: (status: string, text: string) => Promise<void> }) {
   const [status, setStatus] = useState(options[0][0]);
@@ -28,7 +28,7 @@ function Decide({ options, onDecide }: { options: [string, string][]; onDecide: 
 
 export default function ReviewDesk() {
   const { me } = useAuth();
-  const [tab, setTab] = useState<'facts' | 'appeals' | 'reports'>('facts');
+  const [tab, setTab] = useState<'facts' | 'appeals' | 'reports' | 'records'>('facts');
   const [reviews, setReviews] = useState<Review[] | null>(null);
   const [appeals, setAppeals] = useState<Appeal[] | null>(null);
   const [reports, setReports] = useState<ContentReport[] | null>(null);
@@ -53,10 +53,12 @@ export default function ReviewDesk() {
         <button className={'tab' + (tab === 'facts' ? ' on' : '')} onClick={() => setTab('facts')}>Fact reviews ({openCount(reviews)})</button>
         <button className={'tab' + (tab === 'appeals' ? ' on' : '')} onClick={() => setTab('appeals')}>Appeals ({openCount(appeals)})</button>
         <button className={'tab' + (tab === 'reports' ? ' on' : '')} onClick={() => setTab('reports')}>Content reports ({openCount(reports)})</button>
+        <button className={'tab' + (tab === 'records' ? ' on' : '')} onClick={() => setTab('records')}>Records</button>
       </div>
-      <label className="check"><input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} /><span>Show decided items too</span></label>
+      {tab === 'records' && <Records />}
+      {tab !== 'records' && <label className="check"><input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} /><span>Show decided items too</span></label>}
       <ErrorNote error={err} />
-      {(!reviews || !appeals || !reports) && !err && <Spinner />}
+      {tab !== 'records' && (!reviews || !appeals || !reports) && !err && <Spinner />}
 
       {tab === 'facts' && reviews && (vis(reviews).length ? vis(reviews).map((r) => (
         <article key={r.id} className="card">
@@ -105,5 +107,49 @@ export default function ReviewDesk() {
         );
       }) : <Empty title="Nothing waiting" />)}
     </div>
+  );
+}
+
+const ACTION_LABEL: Record<string, string> = {
+  report_actioned: 'Report upheld', report_dismissed: 'Report dismissed',
+  review_no_action: 'Review: no action', review_context: 'Review: context added', review_correction: 'Review: correction', review_overturned: 'Review: overturned',
+  appeal_upheld: 'Appeal: decision kept', appeal_overturned: 'Appeal: decision reversed',
+  content_hidden: 'Content hidden', content_restored: 'Content restored',
+};
+
+/** Append-only record of every moderation decision, written by the database itself. */
+function Records() {
+  const [rows, setRows] = useState<ModerationRecord[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    moderationLog().then(async (r) => { await getProfiles([...new Set(r.map((x) => x.moderator_id).filter(Boolean) as string[])]); setRows(r); }).catch((e) => setErr(e.message));
+  }, []);
+  function download() {
+    const head = 'time,moderator,action,target_type,target_id,category,statement';
+    const esc = (v: unknown) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const csv = [head, ...(rows ?? []).map((r) => [r.created_at, nameOf(cachedProfile(r.moderator_id)), r.action, r.target_type, r.target_id, r.category, r.statement].map(esc).join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'moderation-records.csv'; a.click();
+  }
+  return (
+    <>
+      <p className="note">Written automatically by the database for every decision. Entries cannot be edited or deleted, which keeps the record reliable for audits and transparency reports.</p>
+      <ErrorNote error={err} />
+      {!rows && !err && <Spinner />}
+      {rows && rows.length > 0 && <button className="btn ghost sm" onClick={download}>Download as CSV</button>}
+      {rows && (rows.length ? (
+        <div className="card log-list">
+          {rows.map((r) => (
+            <div key={r.id} className="log-row">
+              <span className="note">{new Date(r.created_at).toLocaleString()}</span>
+              <b>{ACTION_LABEL[r.action] ?? r.action}</b>
+              <span className="note">{r.target_type} #{r.target_id.slice(0, 8)}{r.category ? ' · ' + r.category : ''} · {nameOf(cachedProfile(r.moderator_id))}</span>
+              {r.statement && <p>{r.statement}</p>}
+            </div>
+          ))}
+        </div>
+      ) : <Empty title="No decisions recorded yet" />)}
+    </>
   );
 }

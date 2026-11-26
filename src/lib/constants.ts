@@ -21,12 +21,17 @@ export const CONSENT_SHORT: Record<string, string> = {
   researchers: 'Researchers only',
 };
 export const REPORT_REASONS: [string, string][] = [
+  ['child_safety', 'Child sexual abuse or exploitation'],
+  ['threat', 'Threat of violence'],
   ['danger', 'Puts someone in danger (location, identity)'],
-  ['illegal', 'Illegal content'],
-  ['harassment', 'Harassment or hate'],
-  ['privacy', 'Shares private information'],
-  ['false', 'Clearly false or invented story'],
+  ['hate', 'Illegal hate speech'],
+  ['harassment', 'Harassment or bullying'],
+  ['privacy', 'Shares private information without consent'],
+  ['impersonation', 'Pretends to be someone else'],
+  ['illegal', 'Other illegal content'],
+  ['manipulation', 'Spam or coordinated fake activity'],
   ['spam', 'Spam'],
+  ['false', 'Invented story presented as true'],
   ['other', 'Something else'],
 ];
 

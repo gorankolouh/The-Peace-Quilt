@@ -1,3 +1,4 @@
+import { useT } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
@@ -25,6 +26,25 @@ export function LikeButton({ type, id, liked, count }: { type: 'story' | 'post';
   return (
     <button className={on ? 'liked' : ''} onClick={toggle} aria-pressed={on} aria-label={on ? 'Remove like' : 'Like'}>
       {Icon.heart(on)}<span>{n}</span>
+    </button>
+  );
+}
+
+/** Share a link. Uses the phone's share sheet where available, otherwise copies the link. No tracking parameters are added. */
+export function ShareButton({ path, title }: { path: string; title: string }) {
+  const t = useT();
+  const [done, setDone] = useState(false);
+  async function share() {
+    const url = window.location.origin + path;
+    try {
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) { await navigator.share({ title, url }); return; }
+      await navigator.clipboard.writeText(url);
+      setDone(true); setTimeout(() => setDone(false), 2000);
+    } catch { /* cancelled */ }
+  }
+  return (
+    <button className="iconbtn share" onClick={share} aria-label={t('btn.share')} title={t('btn.share')}>
+      {Icon.share()}{done && <span className="copied" role="status">{t('btn.copied')}</span>}
     </button>
   );
 }
@@ -57,6 +77,8 @@ export function ReportButton({ type, id, label = 'Report' }: { type: string; id:
                   <label key={k} className="radio"><input type="radio" name="reason" value={k} checked={reason === k} onChange={() => setReason(k)} />{l}</label>
                 ))}
               </fieldset>
+              {reason === 'child_safety' && <p className="note warn">Do not copy, download or forward the material. Moderators see this report first. You can also report it to your national hotline (INHOPE network) or the police.</p>}
+              {reason === 'threat' && <p className="note warn">If someone is in immediate danger, contact local emergency services (112 in the EU) first.</p>}
               <label htmlFor="rd">Details (optional)<textarea id="rd" maxLength={2000} value={details} onChange={(e) => setDetails(e.target.value)} /></label>
               <ErrorNote error={err} />
               <button className="btn" type="submit">Send report</button>
@@ -99,6 +121,7 @@ export function StoryCard({ s, themes, regions }: { s: Story; themes: Theme[]; r
       <div className="acts">
         <LikeButton type="story" id={s.id} liked={s.liked} count={s.like_count} />
         <Link to={`/story/${s.id}`} aria-label="Comments">{Icon.comment()}<span>{s.comment_count}</span></Link>
+        <ShareButton path={`/story/${s.id}`} title={s.title} />
         <span className="spacer" />
         <ReportButton type="story" id={s.id} />
       </div>
@@ -156,6 +179,7 @@ export function PostCard({ p, reason }: { p: Post; reason?: string }) {
       <div className="acts">
         <LikeButton type="post" id={p.id} liked={p.liked} count={p.like_count} />
         <Link to={`/post/${p.id}`} aria-label="Comments">{Icon.comment()}<span>{p.comment_count}</span></Link>
+        <ShareButton path={`/post/${p.id}`} title={p.title || 'Verum Agora'} />
         <span className="spacer" />
         <ReportButton type="post" id={p.id} />
       </div>

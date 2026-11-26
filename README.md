@@ -36,6 +36,17 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 - **Interface languages:** English, Deutsch, Français, Nederlands, Español, Italiano, Hrvatski, Polski (Settings → Interface language; the browser language is used by default). Contributions are never machine-translated; untranslated interface text falls back to English. Translations are in `src/lib/i18n.tsx`.
 - **European infrastructure assessment:** see `SOVEREIGNTY.md`.
 
+## Phase 4: moderation records, archive and privacy
+
+- **Moderation records:** every decision on reports, fact reviews, appeals and hidden content is written to an append-only log by the database itself. Moderators can read it and download it as CSV (Review desk → Records); nobody can edit or delete entries.
+- **Public figures:** the Transparency page shows live, aggregated moderation figures for the last 12 months (reports by category and outcome, fact reviews, appeals, median time to a decision). No personal data.
+- **Community rules** page (`/rules`), linked in the footer and from the Transparency page.
+- **Report categories** now include child sexual abuse material, threats, illegal hate speech, impersonation and coordinated fake activity. Child-safety and threat reports are shown to moderators first.
+- **Archive search:** date range, browse by year, sort (newest, oldest, most discussed, most documented), and people search by name. Follower counts are never shown in results.
+- **Share** button on every contribution (phone share sheet or copy link, no tracking parameters).
+- **Messaging privacy:** choose who can start a new conversation with you (everyone, only people you follow, nobody). Enforced in the database.
+- **Acknowledgments without popularity:** profiles show what someone added to the shared record (evidence, documented claims, sourced contributions, research, answers), not likes or rankings.
+
 ## Planned next (not built yet)
 
 - Translated-content labels and cross-language connections between contributions
@@ -45,7 +56,7 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql` and `0006_notifications_replies_limits.sql`, in that order. Each one is additive and keeps existing data.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql` and `0007_moderation_records_privacy.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 
