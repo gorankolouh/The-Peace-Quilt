@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Appeal, Claim, ClaimInput, Comment, Conflict, ContentReport, EventClaim, Evidence, Nature, Review, ReviewStatus, Conversation, FeedItem, Message, Post, PostKind, Profile, Region, Related, Source, Story, Subject, Subtopic, Theme } from './types';
+import type { Notification, Appeal, Claim, ClaimInput, Comment, Conflict, ContentReport, EventClaim, Evidence, Nature, Review, ReviewStatus, Conversation, FeedItem, Message, Post, PostKind, Profile, Region, Related, Source, Story, Subject, Subtopic, Theme } from './types';
 
 export const POST_COLS = 'id,author_id,kind,title,body,media_path,media_kind,created_at,is_mine,like_count,comment_count,liked,language,country,sources,updated_at,subject_ids,subtopic_ids,tags,nature,claim_count,signal_context,signal_conflict,signal_correction';
 
@@ -172,12 +172,14 @@ export async function setLike(me: string, type: 'story' | 'post', id: number, on
   else check(await supabase.from('likes').delete().match({ user_id: me, target_type: type, target_id: id }));
 }
 export async function getComments(type: 'story' | 'post', id: number): Promise<Comment[]> {
-  const c = check(await supabase.from('comments').select('id, author_id, body, created_at').match({ target_type: type, target_id: id }).order('created_at')) as Comment[];
+  const c = check(await supabase.from('comments').select('*').match({ target_type: type, target_id: id }).order('created_at')) as Comment[];
   await getProfiles(c.map((x) => x.author_id));
   return c;
 }
-export async function addComment(me: string, type: 'story' | 'post', id: number, body: string) {
-  check(await supabase.from('comments').insert({ author_id: me, target_type: type, target_id: id, body }));
+export async function addComment(me: string, type: 'story' | 'post', id: number, body: string, parentId?: number | null) {
+  const row: Record<string, unknown> = { author_id: me, target_type: type, target_id: id, body };
+  if (parentId) row.parent_id = parentId;
+  check(await supabase.from('comments').insert(row));
 }
 export async function deleteComment(id: number) {
   check(await supabase.from('comments').delete().eq('id', id));
@@ -450,4 +452,22 @@ export async function decideReport(id: number, status: 'actioned' | 'dismissed',
 export async function setHidden(type: 'post' | 'story' | 'comment', id: number, hidden: boolean) {
   const table = type === 'post' ? 'posts' : type === 'story' ? 'stories' : 'comments';
   check(await supabase.from(table).update({ hidden }).eq('id', id));
+}
+
+
+/* ---------- Phase 3: notifications ---------- */
+export async function getNotifications(): Promise<Notification[]> {
+  const n = check(await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)) as Notification[];
+  await getProfiles(n.map((x) => x.actor_id));
+  return n;
+}
+export async function unreadNotifications(): Promise<number> {
+  const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+  return count ?? 0;
+}
+export async function markNotificationsRead() {
+  await supabase.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null);
+}
+export async function clearNotifications() {
+  check(await supabase.from('notifications').delete().not('id', 'is', null));
 }

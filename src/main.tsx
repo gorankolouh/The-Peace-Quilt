@@ -21,6 +21,8 @@ import Messages from './pages/Messages';
 import Chat from './pages/Chat';
 import ProfilePage from './pages/ProfilePage';
 import Settings from './pages/Settings';
+import Notifications from './pages/Notifications';
+import { I18nProvider } from './lib/i18n';
 import { Login, Signup, ResetPassword, Setup } from './pages/Auth';
 import { Imprint, Privacy, Terms } from './pages/Legal';
 
@@ -78,6 +80,7 @@ function App() {
           <Route path="/new" element={<RequireAuth><Compose /></RequireAuth>} />
           <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
           <Route path="/messages/:id" element={<RequireAuth><Chat /></RequireAuth>} />
+          <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
@@ -94,15 +97,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {DEMO ? (
       <MemoryRouter initialEntries={['/' + window.location.hash.slice(1).replace('-', '/')]}>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </I18nProvider>
       </MemoryRouter>
     ) : (
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </I18nProvider>
       </BrowserRouter>
     )}
   </React.StrictMode>,

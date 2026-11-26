@@ -1,3 +1,4 @@
+import { useT } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PostCard } from '../components/cards';
@@ -8,6 +9,7 @@ import type { Post } from '../lib/types';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 
 export function SubjectsIndex() {
+  const tr = useT();
   const subjects = useSubjects();
   const [counts, setCounts] = useState<Record<number, number>>({});
   useEffect(() => { subjectCounts().then(setCounts).catch(() => {}); }, []);
@@ -15,8 +17,8 @@ export function SubjectsIndex() {
     <div className="col wide">
       <div className="pagehead">
         <div>
-          <h1 className="h1">Explore subjects</h1>
-          <p className="sub">Twelve subjects connect everything on Verum Agora. A contribution can belong to several.</p>
+          <h1 className="h1">{tr('subjects.title')}</h1>
+          <p className="sub">{tr('subjects.sub')}</p>
         </div>
       </div>
       {!subjects.length && <Spinner />}
@@ -36,6 +38,7 @@ export function SubjectsIndex() {
 export function SubjectPage() {
   const slug = useParams().slug!;
   const subjects = useSubjects();
+  const tr = useT();
   const { me } = useAuth();
   const subject = subjects.find((s) => s.slug === slug);
   const [topic, setTopic] = useState<number | null>(null);
@@ -70,7 +73,7 @@ export function SubjectPage() {
         <span className="eyebrow" style={{ color: c }}>Subject</span>
         <h1 className="h1">{subject.name}</h1>
         <p className="sub">{subject.description}</p>
-        {me && <button className={'btn' + (following ? ' ghost' : '')} onClick={toggle}>{following ? 'In my interests' : 'Add to my interests'}</button>}
+        {me && <button className={'btn' + (following ? ' ghost' : '')} onClick={toggle}>{following ? tr('subjects.in') : tr('subjects.add')}</button>}
       </section>
       <div className="tabs" aria-label="Subtopics">
         <button className={'tab' + (topic === null ? ' on' : '')} onClick={() => setTopic(null)}>All</button>

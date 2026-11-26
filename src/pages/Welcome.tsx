@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useT } from '../lib/i18n';
 import { ROLE_COLORS } from '../lib/constants';
 import { supabase } from '../lib/supabase';
 
 export default function Welcome() {
   const { me } = useAuth();
+  const t = useT();
   const ref = useRef<HTMLCanvasElement>(null);
   const [count, setCount] = useState<number | null>(null);
 
@@ -55,12 +57,12 @@ export default function Welcome() {
     <section className="hero">
       <canvas ref={ref} className="hero-cv" aria-hidden="true" />
       <div className="in">
-        <span className="eyebrow">An independent European social information network</span>
+        <span className="eyebrow">{t('welcome.eyebrow')}</span>
         <h1>Verum<br /><em>Agora</em></h1>
-        <p className="lead">Where reality connects. Share information, ask questions and publish research, organised by subject instead of popularity, with no ads and no paid reach.</p>
+        <p className="lead">{t('welcome.lead')}</p>
         <div className="ctas">
-          {me ? <Link className="btn" to="/feed">Go to your feed</Link> : <Link className="btn" to="/signup">Join Verum Agora</Link>}
-          <Link className="btn ghost" to="/subjects">Explore the 12 subjects</Link>
+          {me ? <Link className="btn" to="/feed">{t('welcome.feed')}</Link> : <Link className="btn" to="/signup">{t('feed.joinBtn')}</Link>}
+          <Link className="btn ghost" to="/subjects">{t('welcome.explore')}</Link>
           {!me && <Link className="btn ghost" to="/login">Log in</Link>}
         </div>
         {count !== null && count > 0 && <p className="note" style={{ marginTop: 16 }}>{count} contributions so far.</p>}

@@ -1,3 +1,4 @@
+import { useT } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
@@ -20,10 +21,11 @@ export function emptyClaim(): ClaimInput {
 
 /** Small signal pills for cards and headers. */
 export function Signals({ p, compact }: { p: Post; compact?: boolean }) {
+  const t = useT();
   const items: [string, string, string][] = [];
-  if (p.signal_correction) items.push(['red', 'Documented correction', 'A human review documented a factual correction. The author can appeal.']);
-  if (p.signal_conflict) items.push(['amber', 'Conflicting information', 'Other contributions report different figures or dates for the same event. This does not mean either is false.']);
-  if (p.signal_context) items.push(['blue', 'Additional context', 'Further sources or explanations are available.']);
+  if (p.signal_correction) items.push(['red', t('signal.correction'), 'A human review documented a factual correction. The author can appeal.']);
+  if (p.signal_conflict) items.push(['amber', t('signal.conflict'), 'Other contributions report different figures or dates for the same event. This does not mean either is false.']);
+  if (p.signal_context) items.push(['blue', t('signal.context'), 'Further sources or explanations are available.']);
   if (!items.length && !(p.nature === 'opinion' && !compact)) return null;
   return (
     <div className="signals">

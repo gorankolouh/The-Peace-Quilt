@@ -84,7 +84,8 @@ export type Related = {
   shared_tags: string[];
   same_country: boolean;
 };
-export type Comment = { id: number; author_id: string; body: string; created_at: string };
+export type Comment = { id: number; author_id: string; body: string; created_at: string; parent_id?: number | null };
+export type Notification = { id: number; kind: string; actor_id: string | null; target_type: string | null; target_id: number | null; text: string | null; read_at: string | null; created_at: string };
 export type FeedItem = { type: 'story'; item: Story } | { type: 'post'; item: Post };
 export type Conversation = {
   conversation_id: string;

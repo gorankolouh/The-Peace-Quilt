@@ -159,6 +159,14 @@ const db: Record<string, Row[]> = {
     { id: 1, author_id: P(2), target_type: 'story', target_id: 13, body: 'We did the same with the bakery agreement. Recipes are safer than minutes.', hidden: false, created_at: ago(2) },
     { id: 2, author_id: P(4), target_type: 'post', target_id: 1, body: 'Very useful. Do you have the same table for 2022, to compare?', hidden: false, created_at: ago(1.5) },
     { id: 3, author_id: P(3), target_type: 'post', target_id: 2, body: 'Mostly yes: Dutch schools receive a lump sum per pupil. I linked a comparison in my research post on German funding.', hidden: false, created_at: ago(3) },
+    { id: 4, author_id: P(5), target_type: 'post', target_id: 1, parent_id: 2, body: 'The 2022 figures are in the same KMK series. I can add them as a second table.', hidden: false, created_at: ago(1.2) },
+  ],
+  notifications: [
+    { id: 1, user_id: DEMO_ME, kind: 'follow', actor_id: P(6), target_type: null, target_id: null, text: null, read_at: null, created_at: ago(0.3) },
+    { id: 2, user_id: DEMO_ME, kind: 'comment', actor_id: P(4), target_type: 'post', target_id: 1, text: 'Very useful. Do you have the same table for 2022, to compare?', read_at: null, created_at: ago(1.5) },
+    { id: 3, user_id: DEMO_ME, kind: 'evidence', actor_id: P(2), target_type: 'post', target_id: 1, text: 'Destatis teacher statistics', read_at: null, created_at: ago(1) },
+    { id: 4, user_id: DEMO_ME, kind: 'review_decided', actor_id: null, target_type: 'post', target_id: 5, text: 'Both figures are documented. Context added so readers can compare definitions.', read_at: ago(5), created_at: ago(6) },
+    { id: 5, user_id: DEMO_ME, kind: 'like', actor_id: P(3), target_type: 'story', target_id: 12, text: null, read_at: ago(20), created_at: ago(24) },
   ],
   follows: [P(2), P(3), P(4), P(5)].map((id) => ({ follower_id: DEMO_ME, followee_id: id, created_at: ago(100) }))
     .concat([P(2), P(3), P(6)].map((id) => ({ follower_id: id, followee_id: DEMO_ME, created_at: ago(90) }))),
@@ -176,7 +184,7 @@ const db: Record<string, Row[]> = {
   blocks: [],
   reports: [],
 };
-const nextId: Record<string, number> = { claims: 100, claim_evidence: 100, fact_reviews: 100, appeals: 100, stories: 100, posts: 100, comments: 100, messages: 100, reports: 1 };
+const nextId: Record<string, number> = { claims: 100, claim_evidence: 100, fact_reviews: 100, appeals: 100, stories: 100, posts: 100, comments: 100, messages: 100, reports: 1, notifications: 100 };
 let me: string | null = DEMO_ME;
 
 function view(name: string): Row[] {

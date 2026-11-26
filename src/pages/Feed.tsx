@@ -7,6 +7,7 @@ import { exploreFeed, followingFeed, getInterests, getRegions, getThemes, intere
 import { nameOf } from '../lib/format';
 import type { FeedItem, Region, Theme } from '../lib/types';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
+import { useT } from '../lib/i18n';
 
 type Tab = 'interests' | 'following' | 'latest' | 'explore';
 
@@ -19,6 +20,7 @@ const WHY: Record<Tab, string> = {
 
 export default function Feed() {
   const { me, loading } = useAuth();
+  const t = useT();
   const subjects = useSubjects();
   const [tab, setTab] = useState<Tab>('interests');
   const [interests, setInterests] = useState<number[] | null>(null);
@@ -50,21 +52,21 @@ export default function Feed() {
   }, [tab, me, loading, interests]);
 
   const tabs: [Tab, string][] = me
-    ? [['interests', 'My Interests'], ['following', 'Following'], ['latest', 'Latest'], ['explore', 'Explore']]
-    : [['latest', 'Latest'], ['explore', 'Explore']];
+    ? [['interests', t('feed.interests')], ['following', t('feed.following')], ['latest', t('feed.latest')], ['explore', t('feed.explore')]]
+    : [['latest', t('feed.latest')], ['explore', t('feed.explore')]];
   const noInterests = tab === 'interests' && interests !== null && interests.length === 0;
 
   return (
     <div className="col">
       <div className="pagehead">
-        <h1 className="h1">{me ? 'Home' : 'Verum Agora'}</h1>
+        <h1 className="h1">{me ? t('feed.home') : 'Verum Agora'}</h1>
         <div className="tabs" role="tablist">
           {tabs.map(([k, l]) => (
             <button key={k} role="tab" aria-selected={tab === k} className={'tab' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
       </div>
-      <p className="note why"><b>Why you see this:</b> {WHY[tab]}</p>
+      <p className="note why"><b>{t('feed.why')}</b> {t('feed.why.' + tab) === 'feed.why.' + tab ? WHY[tab] : t('feed.why.' + tab)}</p>
 
       {tab === 'interests' && interests && interests.length > 0 && (
         <div className="row subj-row">
@@ -72,27 +74,27 @@ export default function Feed() {
             const s = subjects.find((x) => x.id === id);
             return s ? <Link key={id} to={`/s/${s.slug}`} className="chip subj" style={{ background: SUBJECT_COLORS[id] + '1f', color: SUBJECT_COLORS[id] }}>{s.name}</Link> : null;
           })}
-          <Link to="/settings" className="note">Change</Link>
+          <Link to="/settings" className="note">{t('feed.change')}</Link>
         </div>
       )}
 
       {me ? (
-        <Link className="card composer" to="/new"><Avatar name={nameOf(me)} role={me.role} src={me.avatar_url} /><span className="fake">Share information, ask a question or publish an article</span></Link>
+        <Link className="card composer" to="/new"><Avatar name={nameOf(me)} role={me.role} src={me.avatar_url} /><span className="fake">{t('feed.compose')}</span></Link>
       ) : (
-        <div className="card row" style={{ justifyContent: 'space-between' }}><span>Join to publish, follow subjects and people, and send messages.</span><Link className="btn" to="/signup">Join Verum Agora</Link></div>
+        <div className="card row" style={{ justifyContent: 'space-between' }}><span>{t('feed.join')}</span><Link className="btn" to="/signup">{t('feed.joinBtn')}</Link></div>
       )}
 
       <Link to="/peace-quilt" className="card quilt-strip">
         <div className="mini-quilt small" aria-hidden="true">
           {Array.from({ length: 12 }, (_, i) => <i key={i} style={{ background: ['#7DD3FC', '#F9A8D4', '#C6F432', '#86EFAC', '#C4B5FD', '#FDBA74'][(i * 5) % 6], animationDelay: `${(i % 6) * 0.3}s` }} />)}
         </div>
-        <span><b>The Peace Quilt</b><span className="note">Small, true peace stories, sewn into a living constellation.</span></span>
+        <span><b>{t('nav.quilt')}</b><span className="note">{t('feed.quilt')}</span></span>
       </Link>
 
       {noInterests && (
-        <Empty title="Choose the subjects you care about">
-          <p className="sub">Your home feed is built from subjects, not from popularity.</p>
-          <Link className="btn" to="/settings">Choose subjects</Link>
+        <Empty title={t('feed.choose')}>
+          <p className="sub">{t('feed.chooseHelp')}</p>
+          <Link className="btn" to="/settings">{t('feed.chooseBtn')}</Link>
         </Empty>
       )}
 
@@ -102,7 +104,7 @@ export default function Feed() {
         ? <StoryCard key={'s' + it.item.id} s={it.item} themes={themes} regions={regions} />
         : <PostCard key={'p' + it.item.id} p={it.item} />)}
       {items && items.length === 0 && !noInterests && (
-        <Empty title="Nothing here yet">
+        <Empty title={t('feed.empty')}>
           <p className="sub">{tab === 'following' ? 'Follow people from their profiles to see their contributions here.' : 'Be the first to contribute.'}</p>
         </Empty>
       )}

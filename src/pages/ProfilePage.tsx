@@ -1,3 +1,4 @@
+import { useT } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PostCard, ReportButton, StoryCard } from '../components/cards';
@@ -52,6 +53,7 @@ function PeopleList({ ownerId, which, onClose }: { ownerId: string; which: 'foll
 export default function ProfilePage() {
   const username = useParams().username!;
   const { me, refresh } = useAuth();
+  const t = useT();
   const nav = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [p, setP] = useState<Profile | null | undefined>(undefined);
@@ -163,19 +165,19 @@ export default function ProfilePage() {
           </div>
         </div>
         <div className="stats">
-          <div><b>{posts.length}</b><span>Contributions</span></div>
-          <div><b>{stories.length}</b><span>Peace pieces</span></div>
-          <button className="stat-btn" onClick={() => setList('followers')}><b>{counts.followers}</b><span>Followers</span></button>
-          <button className="stat-btn" onClick={() => setList('following')}><b>{counts.following}</b><span>Following</span></button>
+          <div><b>{posts.length}</b><span>{t('profile.contributions')}</span></div>
+          <div><b>{stories.length}</b><span>{t('profile.pieces')}</span></div>
+          <button className="stat-btn" onClick={() => setList('followers')}><b>{counts.followers}</b><span>{t('profile.followers')}</span></button>
+          <button className="stat-btn" onClick={() => setList('following')}><b>{counts.following}</b><span>{t('profile.followingN')}</span></button>
         </div>
         <div className="row">
           {mine ? (
-            <Link className="btn ghost" to="/settings">Edit profile</Link>
+            <Link className="btn ghost" to="/settings">{t('btn.editProfile')}</Link>
           ) : (
             <>
-              {!blocked && <button className={'btn' + (following ? ' ghost' : '')} onClick={toggleFollow} disabled={busyFollow} aria-pressed={following}>{following ? 'Following ✓' : 'Follow'}</button>}
-              {!blocked && <button className="btn ghost" onClick={message}>Message</button>}
-              {me && <button className="btn ghost sm" onClick={toggleBlock}>{blocked ? 'Unblock' : 'Block'}</button>}
+              {!blocked && <button className={'btn' + (following ? ' ghost' : '')} onClick={toggleFollow} disabled={busyFollow} aria-pressed={following}>{following ? t('btn.following') : t('btn.follow')}</button>}
+              {!blocked && <button className="btn ghost" onClick={message}>{t('btn.message')}</button>}
+              {me && <button className="btn ghost sm" onClick={toggleBlock}>{blocked ? t('btn.unblock') : t('btn.block')}</button>}
               <div className="acts tight"><ReportButton type="profile" id={p.id} label="Report this profile" /></div>
             </>
           )}
@@ -183,7 +185,7 @@ export default function ProfilePage() {
         <ErrorNote error={err} />
       </section>
       <div className="tabs">
-        <button className={'tab' + (tab === 'posts' ? ' on' : '')} onClick={() => setTab('posts')}>Contributions</button>
+        <button className={'tab' + (tab === 'posts' ? ' on' : '')} onClick={() => setTab('posts')}>{t('profile.contributions')}</button>
         <button className={'tab' + (tab === 'pieces' ? ' on' : '')} onClick={() => setTab('pieces')}>Peace Quilt pieces</button>
       </div>
       {tab === 'pieces' && (stories.length ? stories.map((s) => <StoryCard key={s.id} s={s} themes={themes} regions={regions} />) : <Empty title="No public pieces yet" />)}

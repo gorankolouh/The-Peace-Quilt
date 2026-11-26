@@ -10,6 +10,7 @@ import { useAuth } from '../lib/auth';
 import { PROFILE_ROLES } from '../lib/constants';
 import { deleteMyAccount, exportMyData, getInterests, setInterests, updateMyProfile } from '../lib/data';
 import { supabase } from '../lib/supabase';
+import { LANGS, useI18n } from '../lib/i18n';
 
 export default function Settings() {
   const { me, refresh } = useAuth();
@@ -75,6 +76,8 @@ export default function Settings() {
         <p className="note">Your photo is cropped to a square and re-saved on your device, which removes location and camera details. Profile photos are public.</p>
       </section>
 
+      <LanguageCard />
+
       <section className="card">
         <h2 className="h2" style={{ margin: 0 }}>Notifications</h2>
         <p className="sub">When a new message arrives, you see a pop-up and the unread count in the tab title.</p>
@@ -83,7 +86,7 @@ export default function Settings() {
         {notif === 'default' && <button className="btn ghost sm" onClick={async () => setNotif(await askBrowserNotify())}>Turn on browser notifications</button>}
         {notif === 'denied' && <p className="note">Browser notifications are blocked. You can allow them in your browser's site settings.</p>}
         {notif === 'unsupported' && <p className="note">This browser does not support notifications.</p>}
-        <p className="note">Email and phone push notifications are planned for a later version.</p>
+        <p className="note">Follows, comments, replies, evidence and moderation decisions about your content appear under Notifications. Email and phone push notifications are planned for a later version.</p>
       </section>
 
       <section className="card" id="interests">
@@ -112,5 +115,20 @@ export default function Settings() {
       <ErrorNote error={err} />
       <button className="btn ghost" onClick={async () => { await supabase.auth.signOut(); nav('/'); }}>Log out</button>
     </div>
+  );
+}
+
+function LanguageCard() {
+  const { lang, setLang, t } = useI18n();
+  return (
+    <section className="card">
+      <h2 className="h2" style={{ margin: 0 }}>{t('settings.language')}</h2>
+      <p className="sub">{t('settings.languageHelp')}</p>
+      <div className="lang-pick" role="radiogroup" aria-label={t('settings.language')}>
+        {LANGS.map(([code, name]) => (
+          <button key={code} type="button" role="radio" aria-checked={lang === code} className={'lang-opt' + (lang === code ? ' on' : '')} onClick={() => setLang(code)} lang={code}>{name}</button>
+        ))}
+      </div>
+    </section>
   );
 }

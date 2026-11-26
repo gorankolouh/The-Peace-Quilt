@@ -27,14 +27,25 @@ Stack: React + TypeScript (Vite), Supabase (Postgres, Auth, Storage, Realtime) i
 
 Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `event_claims`). It can later be extended with AI-assisted and cross-language matching.
 
+## Phase 3: platform operations
+
+- **Notifications** (`/notifications`, bell with unread count, live updates): new followers, comments, replies, appreciation, evidence added to your claims, fact reviews requested and decided, appeal outcomes.
+- **DSA notices:** when a moderator restricts content after a report, the author gets a statement of reasons and the reporter gets the outcome, both automatically.
+- **Comment replies**, one level deep, so discussions stay readable.
+- **Rate limiting and spam protection in the database:** hourly limits per account for posts, stories, comments, messages, reports, reviews, evidence, follows and likes, plus a block on posting the same text twice within 10 minutes.
+- **Interface languages:** English, Deutsch, Français, Nederlands, Español, Italiano, Hrvatski, Polski (Settings → Interface language; the browser language is used by default). Contributions are never machine-translated; untranslated interface text falls back to English. Translations are in `src/lib/i18n.tsx`.
+- **European infrastructure assessment:** see `SOVEREIGNTY.md`.
+
 ## Planned next (not built yet)
 
-- **Phase 3, platform operations:** notifications, comment replies, a moderator dashboard with documented decisions and user notices, rate limiting, interface translations (DE, FR, NL, ES, IT, HR, PL), translated-content labels, cross-language connections, and a European infrastructure assessment.
+- Translated-content labels and cross-language connections between contributions
+- Email and push notifications
+- Moving to a fully EU-operated stack (see `SOVEREIGNTY.md`)
 
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql` and `0005_transparency.sql`, in that order. Each one is additive and keeps existing data.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql` and `0006_notifications_replies_limits.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 
@@ -92,6 +103,6 @@ npm run dev
 
 - Moderator dashboard (moderation runs through the Supabase table editor for now)
 - Server-side metadata removal for video and PDF
-- Notifications (new follower, comment, message by email or push)
+- Notifications by email or push (in-app notifications are built)
 - End-to-end encrypted messages
 - Final legal texts: the Privacy, Terms and Imprint pages are drafts marked [TO COMPLETE]

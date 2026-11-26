@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSubjectName } from './i18n';
 import { getSubjects } from './data';
 import type { Subject } from './types';
 
@@ -9,7 +10,8 @@ export function useSubjects(): Subject[] {
     if (cache.length) return;
     getSubjects().then((s) => { cache = s; setSubjects(s); }).catch(() => {});
   }, []);
-  return subjects;
+  const name = useSubjectName();
+  return useMemo(() => subjects.map((s) => ({ ...s, name: name(s.id, s.name) })), [subjects, name]);
 }
 
 // One accent per subject, used for small chips and dots.

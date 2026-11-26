@@ -175,48 +175,68 @@ export function CoverArt({ seed }: { seed: number }) {
   );
 }
 
+function CommentRow({ c, onDelete, onReply, isReply }: { c: Comment; onDelete: () => void; onReply?: () => void; isReply?: boolean }) {
+  const { me } = useAuth();
+  const p = cachedProfile(c.author_id);
+  return (
+    <div className={'comment' + (isReply ? ' reply' : '')}>
+      <Avatar name={nameOf(p)} role={p?.role} size={isReply ? 28 : 32} src={p?.avatar_url} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="row">{p?.username ? <Link to={`/u/${p.username}`} className="plain"><b>{nameOf(p)}</b></Link> : <b>{nameOf(p)}</b>}<span className="note">{timeAgo(c.created_at)}</span></div>
+        <p>{c.body}</p>
+        <div className="row comment-acts">
+          {onReply && me && <button className="linkbtn" onClick={onReply}>Reply</button>}
+          {me?.id === c.author_id && <button className="linkbtn" onClick={onDelete}>Delete</button>}
+        </div>
+      </div>
+      {me?.id !== c.author_id && <div className="acts tight"><ReportButton type="comment" id={c.id} /></div>}
+    </div>
+  );
+}
+
+function CommentForm({ onSubmit, placeholder, autoFocus, id }: { onSubmit: (t: string) => Promise<void>; placeholder: string; autoFocus?: boolean; id: string }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <form className="send inline" onSubmit={async (e) => { e.preventDefault(); if (!text.trim()) return; setBusy(true); try { await onSubmit(text.trim()); setText(''); } finally { setBusy(false); } }}>
+      <label htmlFor={id} className="sr">{placeholder}</label>
+      <input id={id} value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} placeholder={placeholder} autoFocus={autoFocus} />
+      <button className="btn" type="submit" disabled={!text.trim() || busy}>Post</button>
+    </form>
+  );
+}
+
 export function Comments({ type, id }: { type: 'story' | 'post'; id: number }) {
   const { me } = useAuth();
   const [list, setList] = useState<Comment[] | null>(null);
-  const [text, setText] = useState('');
+  const [replyTo, setReplyTo] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const load = () => getComments(type, id).then(setList).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, [type, id]); // eslint-disable-line react-hooks/exhaustive-deps
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!me || !text.trim()) return;
-    try { await addComment(me.id, type, id, text.trim()); setText(''); load(); } catch (x) { setErr((x as Error).message); }
-  }
+  const post = (parent: number | null) => async (text: string) => {
+    if (!me) return;
+    setErr(null);
+    try { await addComment(me.id, type, id, text, parent); setReplyTo(null); await load(); } catch (x) { setErr((x as Error).message); }
+  };
+  const remove = (cid: number) => async () => { await deleteComment(cid); load(); };
+  const top = (list ?? []).filter((c) => !c.parent_id);
+  const replies = (pid: number) => (list ?? []).filter((c) => c.parent_id === pid);
   return (
     <section className="comments" aria-label="Comments">
-      <h2 className="h2">Comments</h2>
-      {list?.length === 0 && <p className="sub">No comments yet.</p>}
-      {list?.map((c) => {
-        const p = cachedProfile(c.author_id);
-        return (
-          <div key={c.id} className="comment">
-            <Avatar name={nameOf(p)} role={p?.role} size={32} src={p?.avatar_url} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="row"><b>{nameOf(p)}</b><span className="note">{timeAgo(c.created_at)}</span></div>
-              <p>{c.body}</p>
+      <h2 className="h2">Comments{list && list.length > 0 ? ` (${list.length})` : ''}</h2>
+      {list?.length === 0 && <p className="sub">No comments yet. Start the discussion.</p>}
+      {top.map((c) => (
+        <div key={c.id} className="thread">
+          <CommentRow c={c} onDelete={remove(c.id)} onReply={() => setReplyTo(replyTo === c.id ? null : c.id)} />
+          {(replies(c.id).length > 0 || replyTo === c.id) && (
+            <div className="replies">
+              {replies(c.id).map((r) => <CommentRow key={r.id} c={r} isReply onDelete={remove(r.id)} />)}
+              {replyTo === c.id && <CommentForm id={`r-${c.id}`} placeholder={`Reply to ${nameOf(cachedProfile(c.author_id))}`} autoFocus onSubmit={post(c.id)} />}
             </div>
-            {me?.id === c.author_id ? (
-              <button className="btn ghost sm" onClick={async () => { await deleteComment(c.id); load(); }}>Delete</button>
-            ) : (
-              <div className="acts tight"><ReportButton type="comment" id={c.id} /></div>
-            )}
-          </div>
-        );
-      })}
-      {me ? (
-        <form className="send inline" onSubmit={submit}>
-          <label htmlFor={`c-${type}-${id}`} className="sr">Write a comment</label>
-          <input id={`c-${type}-${id}`} value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} placeholder="Write a comment" />
-          <button className="btn" type="submit" disabled={!text.trim()}>Post</button>
-        </form>
-      ) : (
-        <p className="sub"><Link to="/login">Log in</Link> to comment.</p>
-      )}
+          )}
+        </div>
+      ))}
+      {me ? <CommentForm id={`c-${type}-${id}`} placeholder="Write a comment" onSubmit={post(null)} /> : <p className="sub"><Link to="/login">Log in</Link> to comment.</p>}
       <ErrorNote error={err} />
     </section>
   );

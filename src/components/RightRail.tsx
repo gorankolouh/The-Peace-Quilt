@@ -1,3 +1,4 @@
+import { useT } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { latestFeed } from '../lib/data';
@@ -8,6 +9,7 @@ type Node = { x: number; y: number; vx: number; vy: number; r: number; c: string
 
 /** A small, slowly drifting network: the 12 subjects as hubs, recent contributions as satellites. */
 function LiveNetwork({ posts }: { posts: Post[] }) {
+  const t = useT();
   const subjects = useSubjects();
   const ref = useRef<HTMLCanvasElement>(null);
   const nav = useNavigate();
@@ -85,7 +87,7 @@ function LiveNetwork({ posts }: { posts: Post[] }) {
           if (n?.post) nav(`/post/${n.post.id}`);
           else if (n?.subject) { const s = subjects.find((x) => x.id === n.subject); if (s) nav(`/s/${s.slug}`); }
         }} />
-      <span className="live-label">{hover ?? 'Hover a light, tap to open'}</span>
+      <span className="live-label">{hover ?? t('rail.hover')}</span>
     </div>
   );
 }
@@ -93,6 +95,7 @@ function LiveNetwork({ posts }: { posts: Post[] }) {
 const QUILT = ['#7DD3FC', '#F9A8D4', '#C6F432', '#86EFAC', '#C4B5FD', '#FDBA74'];
 
 export function RightRail() {
+  const t = useT();
   const [posts, setPosts] = useState<Post[]>([]);
   const subjects = useSubjects();
   useEffect(() => {
@@ -102,19 +105,19 @@ export function RightRail() {
   return (
     <aside className="rail" aria-label="Discover">
       <section className="rail-card">
-        <div className="rail-head"><b>Live connections</b><span className="live-dot" aria-hidden="true" /></div>
+        <div className="rail-head"><b>{t('rail.live')}</b><span className="live-dot" aria-hidden="true" /></div>
         <LiveNetwork posts={posts} />
-        <p className="note">Twelve subjects, and the newest contributions moving towards them.</p>
+        <p className="note">{t('rail.desc')}</p>
       </section>
       <Link to="/peace-quilt" className="rail-card quilt-card">
         <div className="mini-quilt" aria-hidden="true">
           {Array.from({ length: 24 }, (_, i) => <i key={i} style={{ background: QUILT[(i * 5) % QUILT.length], animationDelay: `${(i % 6) * 0.35 + Math.floor(i / 6) * 0.2}s` }} />)}
         </div>
-        <b>The Peace Quilt</b>
-        <span className="note">Small, true peace stories, sewn into a living constellation.</span>
+        <b>{t('nav.quilt')}</b>
+        <span className="note">{t('feed.quilt')}</span>
       </Link>
       <section className="rail-card">
-        <b>Subjects</b>
+        <b>{t('nav.subjects')}</b>
         <div className="rail-subjects">
           {subjects.map((s) => (
             <Link key={s.id} to={`/s/${s.slug}`}><i style={{ background: SUBJECT_COLORS[s.id] }} />{s.name}</Link>
