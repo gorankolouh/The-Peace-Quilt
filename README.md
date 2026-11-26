@@ -47,16 +47,30 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 - **Messaging privacy:** choose who can start a new conversation with you (everyone, only people you follow, nobody). Enforced in the database.
 - **Acknowledgments without popularity:** profiles show what someone added to the shared record (evidence, documented claims, sourced contributions, research, answers), not likes or rankings.
 
+## Phase 5: multilingual connections
+
+- **Automatic translation, always labelled.** When a contribution is in another language than your interface, a Translate button appears. The translation is marked "Automatic translation · original: German", shown with a blue edge, and "Show original" is one click away. Nothing is ever replaced in the database.
+- **Three sources, most private first:** a cached server translation if one exists; on-device translation in Chrome on a computer (the text never leaves the device); otherwise the `translate` Edge Function using DeepL (DeepL SE, Germany), if you deploy it and add a key.
+- **Stale translations are deleted** automatically when the author edits the text.
+- **Cross-language topics:** signed-in people can link equivalent topic names ("schulfinanzierung" = "school funding"). Related discussions, conflict detection (amber signal), the comparison view and topic search then work across languages. Links are flattened into groups; moderators can remove wrong ones.
+- Related discussions say "written in German" and can be filtered to other languages only.
+
+### Turning on server translation (optional)
+
+1. Create a DeepL API account (the free plan allows 500,000 characters a month; for production use a paid plan, which deletes texts after translation).
+2. Deploy the function: `supabase functions deploy translate` (or create a function named `translate` in the Supabase dashboard and paste `supabase/functions/translate/index.ts`).
+3. Add the key as a secret named `DEEPL_API_KEY` (Dashboard → Edge Functions → Secrets). Never put it in the front end.
+
 ## Planned next (not built yet)
 
-- Translated-content labels and cross-language connections between contributions
+- Suggested topic links (detecting likely equivalents automatically, confirmed by people)
 - Email and push notifications
 - Moving to a fully EU-operated stack (see `SOVEREIGNTY.md`)
 
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql` and `0007_moderation_records_privacy.sql`, in that order. Each one is additive and keeps existing data.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql`, `0007_moderation_records_privacy.sql` and `0008_translation_cross_language.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 

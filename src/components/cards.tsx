@@ -1,8 +1,8 @@
-import { useT } from '../lib/i18n';
+import { useI18n, useT } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { CONSENT_SHORT, POST_KINDS, REPORT_REASONS, countryName } from '../lib/constants';
+import { CONSENT_SHORT, POST_KINDS, REPORT_REASONS, countryName, languageName } from '../lib/constants';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 import { Signals } from './transparency';
 import { addComment, cachedProfile, deleteComment, getComments, report, setLike } from '../lib/data';
@@ -150,7 +150,8 @@ export function SubjectChips({ ids, subtopicIds = [], tags = [] }: { ids: number
 export function PostCard({ p, reason }: { p: Post; reason?: string }) {
   const author = cachedProfile(p.author_id);
   const long = p.kind === 'article' || p.kind === 'research';
-  const meta = [author?.username ? '@' + author.username : '', timeAgo(p.created_at), countryName(p.country), p.updated_at ? 'edited' : '']
+  const { lang } = useI18n();
+  const meta = [author?.username ? '@' + author.username : '', timeAgo(p.created_at), p.language && p.language !== lang ? languageName(p.language) : '', countryName(p.country), p.updated_at ? 'edited' : '']
     .filter(Boolean).join(' · ');
   return (
     <article className="card">
@@ -168,7 +169,7 @@ export function PostCard({ p, reason }: { p: Post; reason?: string }) {
         <Link to={`/post/${p.id}`} className="plain">
           {p.kind === 'question' && <span className="eyebrow q">Question</span>}
           {p.title && <h3 className="post-title">{p.title}</h3>}
-          <p className="post-body">{p.body.length > 600 ? p.body.slice(0, 600) + '…' : p.body}</p>
+          <p className="post-body" lang={p.language}>{p.body.length > 600 ? p.body.slice(0, 600) + '…' : p.body}</p>
         </Link>
       )}
       {!long && p.media_path && p.media_kind && <MediaView path={p.media_path} kind={p.media_kind} />}

@@ -475,3 +475,13 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 .note.warn { color: #FCD34D; }
 .filters input[type="date"] { color-scheme: dark; }
 .fig { display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Phase 5: translation, cross-language terms ---------- */
+.tr-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); padding: 8px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.tr-bar.on { border-style: solid; border-color: #93C5FD55; background: #93C5FD10; color: #BFDBFE; }
+.prose.translated { border-left: 3px solid #93C5FD55; padding-left: 14px; }
+.terms { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.terms-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.terms-form select, .terms-form input { min-height: 36px; }
+.terms-form input { flex: 1; min-width: 160px; }
+.terms-form .note:last-child { flex-basis: 100%; }

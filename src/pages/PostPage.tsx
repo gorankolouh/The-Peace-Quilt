@@ -9,12 +9,15 @@ import { removeMedia } from '../lib/media';
 import type { Post, Related } from '../lib/types';
 import { useSubjects } from '../lib/useSubjects';
 import { TransparencyPanel } from '../components/transparency';
+import { useI18n } from '../lib/i18n';
+import { translatePost, type Translation } from '../lib/translate';
+import { LinkTerms } from '../components/LinkTerms';
 
 function hostOf(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
 }
 
-export function RelatedList({ postId }: { postId: number }) {
+export function RelatedList({ postId, lang }: { postId: number; lang?: string }) {
   const subjects = useSubjects();
   const [items, setItems] = useState<Related[] | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<number | null>(null);
@@ -25,11 +28,14 @@ export function RelatedList({ postId }: { postId: number }) {
     if (r.shared_tags.length) bits.push('topic ' + r.shared_tags.map((t) => '#' + t).join(', '));
     if (r.shared_subjects) bits.push(`${r.shared_subjects} shared subject${r.shared_subjects > 1 ? 's' : ''}`);
     if (r.same_country) bits.push(`same country (${countryName(r.post.country)})`);
+    if (lang && r.post.language && r.post.language !== lang) bits.push(`written in ${languageName(r.post.language)}`);
     if (!bits.length) bits.push('similar wording');
     return 'Connected by: ' + bits.join(' · ');
   };
   const usedSubjects = [...new Set((items ?? []).flatMap((r) => r.post.subject_ids))];
-  const shown = (items ?? []).filter((r) => !subjectFilter || r.post.subject_ids.includes(subjectFilter));
+  const [otherLang, setOtherLang] = useState(false);
+  const crossCount = (items ?? []).filter((r) => lang && r.post.language !== lang).length;
+  const shown = (items ?? []).filter((r) => (!subjectFilter || r.post.subject_ids.includes(subjectFilter)) && (!otherLang || r.post.language !== lang));
   return (
     <section className="related" aria-label="Related discussions">
       <h2 className="h2">Related discussions</h2>
@@ -39,6 +45,9 @@ export function RelatedList({ postId }: { postId: number }) {
           <button className={'tab' + (subjectFilter === null ? ' on' : '')} onClick={() => setSubjectFilter(null)}>All</button>
           {usedSubjects.map((id) => <button key={id} className={'tab' + (subjectFilter === id ? ' on' : '')} onClick={() => setSubjectFilter(id)}>{subjects.find((s) => s.id === id)?.name ?? ''}</button>)}
         </div>
+      )}
+      {crossCount > 0 && (
+        <label className="check"><input type="checkbox" checked={otherLang} onChange={(e) => setOtherLang(e.target.checked)} /><span>Only discussions in other languages ({crossCount})</span></label>
       )}
       {!items && <Spinner />}
       {items?.length === 0 && <p className="sub">No related discussions yet. They appear as others publish on the same subjects and topics.</p>}
@@ -52,6 +61,8 @@ export default function PostPage() {
   const nav = useNavigate();
   const [p, setP] = useState<Post | null | undefined>(undefined);
   const [err, setErr] = useState<string | null>(null);
+  const [tr, setTr] = useState<Translation | null>(null);
+  const { lang } = useI18n();
 
   const loc = useLocation();
   useEffect(() => { setP(undefined); getPost(id).then(setP).catch((e) => setErr(e.message)); }, [id]);
@@ -87,11 +98,13 @@ export default function PostPage() {
       <button className="back" onClick={() => nav(-1)}>{Icon.back()}Back</button>
       {long && <div className="cover big" aria-hidden="true"><CoverArt seed={p.id} /></div>}
       <span className="eyebrow block">{POST_KINDS[p.kind]}{long ? ` · ${readMinutes(p.body)} min read` : ''}</span>
-      {p.title && <h1 className={long ? '' : 'h1'}>{p.title}</h1>}
+      {(tr?.title ?? p.title) && <h1 className={long ? '' : 'h1'} lang={tr ? lang : p.language}>{tr?.title ?? p.title}</h1>}
       {author}
+      <TranslateBar p={p} tr={tr} setTr={setTr} />
       <SubjectChips ids={p.subject_ids} subtopicIds={p.subtopic_ids} tags={p.tags} />
+      <LinkTerms tags={p.tags} />
       {p.media_path && p.media_kind && <MediaView path={p.media_path} kind={p.media_kind} />}
-      <div className={long ? 'prose' : 'prose short'}>{p.body.split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}</div>
+      <div className={(long ? 'prose' : 'prose short') + (tr ? ' translated' : '')} lang={tr ? lang : p.language}>{(tr?.body ?? p.body).split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}</div>
       {p.sources?.length > 0 && (
         <section className="card sources" aria-label="Sources">
           <b>Sources and references</b>
@@ -115,7 +128,41 @@ export default function PostPage() {
       </div>
       {p.kind !== 'question' && <TransparencyPanel post={p} />}
       <Comments type="post" id={p.id} />
-      <RelatedList postId={p.id} />
+      <RelatedList postId={p.id} lang={p.language} />
     </article>
+  );
+}
+
+function TranslateBar({ p, tr, setTr }: { p: Post; tr: Translation | null; setTr: (t: Translation | null) => void }) {
+  const { lang, t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setTr(null); setFailed(false); }, [p.id, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!p.language || p.language === lang) return null;
+  let from = languageName(p.language);
+  try { from = new Intl.DisplayNames([lang], { type: 'language' }).of(p.language) ?? from; } catch { /* older browser */ }
+  async function go() {
+    setBusy(true); setFailed(false);
+    try { setTr(await translatePost(p, lang, setProgress)); } catch { setFailed(true); }
+    setBusy(false); setProgress(null);
+  }
+  if (tr) {
+    const how = tr.engine === 'device' ? t('tr.device') : tr.engine === 'deepl' ? t('tr.deepl') : t('tr.server');
+    return (
+      <div className="tr-bar on" role="note">
+        <span>{t('tr.label').replace('{lang}', from)} · {how}</span>
+        <button className="linkbtn" onClick={() => setTr(null)}>{t('tr.original')}</button>
+      </div>
+    );
+  }
+  return (
+    <div className="tr-bar">
+      <span>{t('tr.written').replace('{lang}', from)}</span>
+      <button className="btn ghost sm" onClick={go} disabled={busy}>
+        {busy ? (progress !== null && progress < 1 ? `${t('tr.downloading')} ${Math.round(progress * 100)}%` : t('tr.working')) : t('tr.translate')}
+      </button>
+      {failed && <span className="note">{t('tr.unavailable')}</span>}
+    </div>
   );
 }

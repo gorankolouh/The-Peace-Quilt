@@ -350,7 +350,7 @@ export async function searchPosts(f: SearchFilters): Promise<Post[]> {
   if (f.country) q = q.eq('country', f.country);
   if (f.language) q = q.eq('language', f.language);
   if (f.kind) q = q.eq('kind', f.kind);
-  if (f.tag) q = q.contains('tags', [f.tag]);
+  if (f.tag) q = q.overlaps('tags', await equivalentTerms(f.tag).catch(() => [f.tag!]));
   if (f.author) q = q.eq('author_id', f.author);
   if (f.from) q = q.gte('created_at', f.from);
   if (f.to) q = q.lt('created_at', new Date(new Date(f.to).getTime() + 86400000).toISOString().slice(0, 10));
@@ -501,4 +501,12 @@ export async function transparencyStats(): Promise<TransparencyStats> {
 }
 export async function contributionRecord(uid: string): Promise<ContributionRecord> {
   return check(await supabase.rpc('contribution_record', { uid })) as ContributionRecord;
+}
+
+/* ---------- Phase 5: cross-language terms ---------- */
+export async function equivalentTerms(term: string): Promise<string[]> {
+  return (check(await supabase.rpc('equivalent_terms', { t: term })) as string[]) ?? [term];
+}
+export async function linkTerms(term: string, canonical: string) {
+  check(await supabase.from('term_links').insert({ term: term.trim().toLowerCase(), canonical: canonical.trim().toLowerCase() }));
 }

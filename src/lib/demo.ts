@@ -100,6 +100,8 @@ const SEED: Seed[] = [
     src: [{ url: 'https://inee.org/', title: 'Inter-agency Network for Education in Emergencies' }] },
   { a: P(6), k: 'question', t: 'Which European cloud providers are actually EU-owned?', h: 40, s: [8], st: ['Digital sovereignty', 'Data protection'], tags: ['european cloud'],
     b: 'Server location in Frankfurt does not mean European control. I am collecting providers by ownership and legal jurisdiction. Please add sources.' },
+  { a: P(7), k: 'post', t: 'Bayern: mehr Geld für Schulen, aber weiter Lehrermangel', h: 3, s: [6, 5], st: ['Education policy'], tags: ['schulfinanzierung', 'lehrermangel'], c: 'DE', l: 'de',
+    b: 'Bayern erhöht 2026 das Budget pro Schüler. Trotzdem bleiben viele Stellen an Grundschulen unbesetzt.\n\nDie Gewerkschaft sagt, das Problem sei nicht das Geld, sondern die Bezahlung von Grundschullehrkräften im Vergleich zum Gymnasium.' },
 ];
 const posts: Row[] = SEED.map((x, i) => ({
   id: i + 1, author_id: x.a, kind: x.k, title: x.t, body: x.b, created_at: ago(x.h), media_path: null, media_kind: null, hidden: false,
@@ -164,6 +166,14 @@ const db: Record<string, Row[]> = {
   moderation_log: [
     { id: 1, moderator_id: DEMO_ME, action: 'review_context', target_type: 'post', target_id: '5', category: 'fact_review', statement: 'Both figures are documented. Context added so readers can compare definitions.', created_at: ago(6) },
     { id: 2, moderator_id: DEMO_ME, action: 'report_dismissed', target_type: 'comment', target_id: '3', category: 'spam', statement: 'An ordinary answer with a relevant link. Not spam.', created_at: ago(30) },
+  ],
+  term_links: [
+    { term: 'schulfinanzierung', canonical: 'school funding', created_by: P(3), created_at: ago(2) },
+    { term: 'lehrermangel', canonical: 'teacher shortage', created_by: P(3), created_at: ago(2) },
+  ],
+  translations: [
+    { post_id: 9, lang: 'en', title: 'Bavaria: more money for schools, but the teacher shortage continues', engine: 'deepl', created_at: ago(2),
+      body: 'Bavaria is raising its per-pupil budget in 2026. Even so, many primary school posts remain unfilled.\n\nThe union says the problem is not money but how primary school teachers are paid compared with grammar school teachers.' },
   ],
   notifications: [
     { id: 1, user_id: DEMO_ME, kind: 'follow', actor_id: P(6), target_type: null, target_id: null, text: null, read_at: null, created_at: ago(0.3) },
@@ -323,6 +333,11 @@ function rpc(fn: string, args: Row): unknown {
   }
   if (fn === 'delete_my_account') { me = null; return null; }
   if (fn === 'claim_conflicts') return conflictsFor(args.pid);
+  if (fn === 'equivalent_terms') {
+    const t = String(args.t).toLowerCase().trim();
+    const c = db.term_links.find((l) => l.term === t)?.canonical ?? t;
+    return [...new Set([c, t, ...db.term_links.filter((l) => l.canonical === c).map((l) => l.term)])].sort();
+  }
   if (fn === 'transparency_stats') {
     const count = (rows: Row[], k: string) => rows.reduce((o: Record<string, number>, r) => { o[r[k]] = (o[r[k]] || 0) + 1; return o; }, {});
     return {
@@ -357,7 +372,9 @@ function rpc(fn: string, args: Row): unknown {
     return all.filter((p) => p.id !== base.id).map((p) => {
       const ss = p.subject_ids.filter((x: number) => base.subject_ids.includes(x)).length;
       const stt = p.subtopic_ids.filter((x: number) => base.subtopic_ids.includes(x)).length;
-      const tg = p.tags.filter((x: string) => base.tags.includes(x));
+      const canon = (t: string) => db.term_links.find((l) => l.term === t)?.canonical ?? t;
+      const baseTags = base.tags.map(canon);
+      const tg = p.tags.filter((x: string) => baseTags.includes(canon(x)));
       const sc = !!(p.country && p.country === base.country);
       return { post_id: p.id, score: stt * 3 + tg.length * 3 + ss + (sc ? 2 : 0), shared_subjects: ss, shared_subtopics: stt, shared_tags: tg, same_country: sc };
     }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).slice(0, args.max_results || 8);
