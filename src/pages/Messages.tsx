@@ -25,7 +25,7 @@ export default function Messages() {
             const p = cachedProfile(c.other_id);
             return (
               <Link key={c.conversation_id} to={`/messages/${c.conversation_id}`} className={c.unread ? 'u' : ''}>
-                <Avatar name={nameOf(p)} role={p?.role} />
+                <Avatar name={nameOf(p)} role={p?.role} src={p?.avatar_url} />
                 <span className="l">
                   <span className="t"><span className="n">{nameOf(p)}</span><span className="note">{c.last_at ? timeAgo(c.last_at) : ''}</span></span>
                   <span className="x">{c.last_sender === me?.id ? 'You: ' : ''}{c.last_body ?? 'No messages yet'}</span>

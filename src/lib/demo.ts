@@ -343,3 +343,12 @@ export async function demoFetch(input: RequestInfo | URL, init: RequestInit = {}
   }
   return json({}, 400);
 }
+
+/** Fictional example pieces, shown (clearly labelled) while the real Peace Quilt is still small. */
+export function exampleStories() {
+  return RAW.map((r, i) => ({
+    id: -(i + 1), title: r[0], role: r[1], theme_id: r[2], region_id: r[3], body: r[4], consent: 'public' as const,
+    media_path: null, media_kind: null, created_at: ago((RAW.length - i) * 7), author_id: null, is_mine: false,
+    like_count: 0, comment_count: 0, liked: false,
+  }));
+}

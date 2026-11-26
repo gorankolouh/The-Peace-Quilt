@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { InterestsPicker } from '../components/InterestsPicker';
+import { askBrowserNotify, browserNotifyState, chime, setSound, soundOn } from '../lib/notify';
+import { removeAvatar, uploadAvatar } from '../lib/media';
+import { Avatar } from '../components/ui';
+import { nameOf } from '../lib/format';
 import { useNavigate } from 'react-router-dom';
 import { ErrorNote } from '../components/ui';
 import { useAuth } from '../lib/auth';
@@ -19,6 +23,9 @@ export default function Settings() {
   const [confirm, setConfirm] = useState('');
   const [interests, setInt] = useState<number[]>([]);
   const [intSaved, setIntSaved] = useState(false);
+  const [notif, setNotif] = useState(browserNotifyState());
+  const [sound, setSoundState] = useState(soundOn());
+  const [photoBusy, setPhotoBusy] = useState(false);
   useEffect(() => { if (me) getInterests(me.id).then(setInt).catch(() => {}); }, [me]);
   if (!me) return null;
   async function saveInterests() {
@@ -50,6 +57,34 @@ export default function Settings() {
         <label htmlFor="bi">Bio<textarea id="bi" maxLength={280} value={bio} onChange={(e) => setBio(e.target.value)} /></label>
         <div className="row"><button className="btn">Save</button>{saved && <span className="ok">Saved</span>}</div>
       </form>
+
+      <section className="card">
+        <h2 className="h2" style={{ margin: 0 }}>Profile photo</h2>
+        <div className="row">
+          <Avatar name={nameOf(me)} role={me.role} size={64} src={me.avatar_url} />
+          <label className="btn ghost sm file-btn">{photoBusy ? 'Uploading…' : me.avatar_url ? 'Change photo' : 'Upload photo'}
+            <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={photoBusy} onChange={async (e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              setPhotoBusy(true);
+              try { await uploadAvatar(me.id, f, me.avatar_url ?? null); await refresh(); } catch (x) { setErr((x as Error).message); }
+              setPhotoBusy(false); e.target.value = '';
+            }} />
+          </label>
+          {me.avatar_url && <button className="linkbtn" onClick={async () => { try { await removeAvatar(me.id, me.avatar_url!); await refresh(); } catch (x) { setErr((x as Error).message); } }}>Remove</button>}
+        </div>
+        <p className="note">Your photo is cropped to a square and re-saved on your device, which removes location and camera details. Profile photos are public.</p>
+      </section>
+
+      <section className="card">
+        <h2 className="h2" style={{ margin: 0 }}>Notifications</h2>
+        <p className="sub">When a new message arrives, you see a pop-up and the unread count in the tab title.</p>
+        <label className="check"><input type="checkbox" checked={sound} onChange={(e) => { setSound(e.target.checked); setSoundState(e.target.checked); if (e.target.checked) chime(); }} /><span>Play a soft sound for new messages</span></label>
+        {notif === 'granted' && <p className="ok">Browser notifications are on. You get them while Verum Agora is open in another tab.</p>}
+        {notif === 'default' && <button className="btn ghost sm" onClick={async () => setNotif(await askBrowserNotify())}>Turn on browser notifications</button>}
+        {notif === 'denied' && <p className="note">Browser notifications are blocked. You can allow them in your browser's site settings.</p>}
+        {notif === 'unsupported' && <p className="note">This browser does not support notifications.</p>}
+        <p className="note">Email and phone push notifications are planned for a later version.</p>
+      </section>
 
       <section className="card" id="interests">
         <h2 className="h2" style={{ margin: 0 }}>My interests</h2>

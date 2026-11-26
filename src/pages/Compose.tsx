@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ErrorNote, Spinner } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { CONSENT_LABEL, COUNTRIES, LANGUAGES, POST_KINDS, STORY_ROLES } from '../lib/constants';
@@ -28,7 +28,8 @@ export default function Compose() {
   const nav = useNavigate();
   const subjects = useSubjects();
   const [loaded, setLoaded] = useState(!editId);
-  const [kind, setKind] = useState<Kind>('post');
+  const [sp] = useSearchParams();
+  const [kind, setKind] = useState<Kind>((['post', 'question', 'article', 'research', 'story'].includes(sp.get('kind') ?? '') ? sp.get('kind') : 'post') as Kind);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [subj, setSubj] = useState<number[]>([]);

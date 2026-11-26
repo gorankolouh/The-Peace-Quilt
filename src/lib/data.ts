@@ -214,8 +214,11 @@ export async function conversationOther(conv: string, me: string): Promise<strin
   if (other) await getProfiles([other]);
   return other;
 }
-export async function sendMessage(me: string, conv: string, body: string) {
-  check(await supabase.from('messages').insert({ conversation_id: conv, sender_id: me, body }));
+export async function sendMessage(me: string, conv: string, body: string, attachment?: { path: string; kind: string; name: string } | null) {
+  check(await supabase.from('messages').insert({
+    conversation_id: conv, sender_id: me, body,
+    attachment_path: attachment?.path ?? null, attachment_kind: attachment?.kind ?? null, attachment_name: attachment?.name ?? null,
+  }));
 }
 export async function markRead(conv: string) {
   await supabase.rpc('mark_read', { conv });
@@ -269,6 +272,8 @@ export async function exportMyData(me: string) {
 export async function deleteMyAccount(me: string) {
   const { data: files } = await supabase.storage.from('media').list(me, { limit: 1000 });
   if (files && files.length) await supabase.storage.from('media').remove(files.map((f) => `${me}/${f.name}`));
+  const { data: av } = await supabase.storage.from('avatars').list(me, { limit: 100 });
+  if (av && av.length) await supabase.storage.from('avatars').remove(av.map((f) => `${me}/${f.name}`));
   check(await supabase.rpc('delete_my_account'));
   await supabase.auth.signOut();
 }
@@ -353,4 +358,16 @@ export async function relatedPosts(id: number): Promise<Related[]> {
     const post = posts.find((p) => p.id === r.post_id);
     return post ? [{ post, score: Number(r.score), shared_subjects: r.shared_subjects, shared_subtopics: r.shared_subtopics, shared_tags: r.shared_tags || [], same_country: r.same_country }] : [];
   });
+}
+
+export async function followList(id: string, which: 'followers' | 'following'): Promise<Profile[]> {
+  const col = which === 'followers' ? 'followee_id' : 'follower_id';
+  const other = which === 'followers' ? 'follower_id' : 'followee_id';
+  const rows = check(await supabase.from('follows').select(other).eq(col, id).order('created_at', { ascending: false }).limit(500)) as Record<string, string>[];
+  const ids = rows.map((r) => r[other]);
+  const map = await getProfiles(ids);
+  return ids.map((x) => map.get(x)).filter((x): x is Profile => !!x);
+}
+export async function myFollowingSet(me: string): Promise<Set<string>> {
+  return new Set(await followingIds(me));
 }

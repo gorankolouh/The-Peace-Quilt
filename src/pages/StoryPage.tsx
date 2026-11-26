@@ -64,7 +64,7 @@ export default function StoryPage() {
         <Chip>{timeAgo(s.created_at)}</Chip>
       </div>
       {author?.username ? (
-        <Link className="who" to={`/u/${author.username}`}><Avatar name={nameOf(author)} role={author.role} size={32} /><span className="n">{nameOf(author)}</span></Link>
+        <Link className="who" to={`/u/${author.username}`}><Avatar name={nameOf(author)} role={author.role} src={author.avatar_url} size={32} /><span className="n">{nameOf(author)}</span></Link>
       ) : (
         <div className="who"><Avatar name="P C" role={s.role} size={32} /><span className="n">{s.consent === 'pseudonymous' ? 'Pseudonymous contributor' : 'Contributor'}</span></div>
       )}

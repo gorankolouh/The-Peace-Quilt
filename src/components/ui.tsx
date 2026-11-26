@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ROLE_COLORS } from '../lib/constants';
 import { initials } from '../lib/format';
-import { mediaUrl } from '../lib/media';
+import { avatarUrl, mediaUrl } from '../lib/media';
 import type { MediaKind } from '../lib/types';
 
 const svg = (d: ReactNode, size = 20, sw = 1.8) => (
@@ -25,8 +25,12 @@ export const Icon = {
   settings: () => svg(<><circle cx="12" cy="12" r="3" /><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1c.6.5 1.3.9 2 1.2L10 21h4l.5-2.6c.7-.3 1.4-.7 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z" /></>),
 };
 
-export function Avatar({ name, role, size = 42 }: { name: string; role?: string; size?: number }) {
+export function Avatar({ name, role, size = 42, src }: { name: string; role?: string; size?: number; src?: string | null }) {
   const c = ROLE_COLORS[role || 'Member'] || '#EEF2EA';
+  const [broken, setBroken] = useState(false);
+  if (src && !broken) {
+    return <img className="av av-img" src={avatarUrl(src)} alt="" width={size} height={size} style={{ width: size, height: size, boxShadow: `0 0 0 2px ${c}55` }} onError={() => setBroken(true)} />;
+  }
   return (
     <span className="av" style={{ background: c + '26', color: c, width: size, height: size, fontSize: Math.max(11, size * 0.31) }} aria-hidden="true">
       {initials(name)}
@@ -44,7 +48,16 @@ export function Chip({ children }: { children: ReactNode }) {
 }
 
 export function Spinner({ label = 'Loading' }: { label?: string }) {
-  return <div className="spinner" role="status"><span className="dot" />{label}</div>;
+  return (
+    <div className="skeletons" role="status" aria-label={label}>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="card skel" style={{ animationDelay: `${i * 0.12}s` }}>
+          <div className="row"><span className="sk sk-av" /><span className="sk sk-line" style={{ width: '40%' }} /></div>
+          <span className="sk sk-line" /><span className="sk sk-line" style={{ width: '85%' }} /><span className="sk sk-line" style={{ width: '60%' }} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ErrorNote({ error }: { error: string | null }) {

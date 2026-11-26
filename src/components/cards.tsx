@@ -72,7 +72,7 @@ function Who({ authorId, role, meta, pseudonymous }: { authorId: string | null; 
   const name = authorId ? nameOf(p) : pseudonymous ? 'Pseudonymous contributor' : 'Contributor';
   const inner = (
     <>
-      <Avatar name={authorId ? name : 'P C'} role={role} />
+      <Avatar name={authorId ? name : 'P C'} role={role} src={p?.avatar_url} />
       <div style={{ minWidth: 0 }}>
         <div className="row"><span className="n">{name}</span><RoleChip role={role} /></div>
         <div className="m">{meta}</div>
@@ -193,7 +193,7 @@ export function Comments({ type, id }: { type: 'story' | 'post'; id: number }) {
         const p = cachedProfile(c.author_id);
         return (
           <div key={c.id} className="comment">
-            <Avatar name={nameOf(p)} role={p?.role} size={32} />
+            <Avatar name={nameOf(p)} role={p?.role} size={32} src={p?.avatar_url} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="row"><b>{nameOf(p)}</b><span className="note">{timeAgo(c.created_at)}</span></div>
               <p>{c.body}</p>

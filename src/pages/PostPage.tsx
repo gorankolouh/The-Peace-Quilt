@@ -70,7 +70,7 @@ export default function PostPage() {
   const meta = [timeAgo(p.created_at), p.updated_at ? `edited ${timeAgo(p.updated_at)}` : '', languageName(p.language), countryName(p.country)].filter(Boolean).join(' · ');
   const author = (
     <Link className="who" to={a?.username ? `/u/${a.username}` : '#'}>
-      <Avatar name={nameOf(a)} role={a?.role} />
+      <Avatar name={nameOf(a)} role={a?.role} src={a?.avatar_url} />
       <div><div className="row"><span className="n">{nameOf(a)}</span>{a && <RoleChip role={a.role} />}</div><div className="m">{a?.username ? '@' + a.username + ' · ' : ''}{meta}</div></div>
     </Link>
   );

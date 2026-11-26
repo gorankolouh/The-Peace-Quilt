@@ -62,3 +62,33 @@ export async function mediaUrl(path: string): Promise<string | null> {
 export async function removeMedia(path: string) {
   await supabase.storage.from('media').remove([path]);
 }
+
+export function avatarUrl(path: string): string {
+  return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+}
+
+/** Crops a photo to a centred square, scales it to 400 px and re-encodes it (drops EXIF/GPS). */
+export async function uploadAvatar(me: string, file: File, oldPath: string | null): Promise<string> {
+  if (!file.type.startsWith('image/')) throw new Error('Please choose a photo.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('Photos can be up to 15 MB.');
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions);
+  const side = Math.min(bmp.width, bmp.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = 400; canvas.height = 400;
+  canvas.getContext('2d')!.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, 400, 400);
+  bmp.close();
+  const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('Could not process the photo'))), 'image/jpeg', 0.86));
+  const path = `${me}/${crypto.randomUUID()}.jpg`;
+  const { error } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' });
+  if (error) throw new Error(error.message);
+  const { error: e2 } = await supabase.from('profiles').update({ avatar_url: path }).eq('id', me);
+  if (e2) { await supabase.storage.from('avatars').remove([path]); throw new Error(e2.message); }
+  if (oldPath) await supabase.storage.from('avatars').remove([oldPath]);
+  return path;
+}
+
+export async function removeAvatar(me: string, oldPath: string) {
+  const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', me);
+  if (error) throw new Error(error.message);
+  await supabase.storage.from('avatars').remove([oldPath]);
+}

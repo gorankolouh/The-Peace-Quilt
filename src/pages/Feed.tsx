@@ -77,10 +77,17 @@ export default function Feed() {
       )}
 
       {me ? (
-        <Link className="card composer" to="/new"><Avatar name={nameOf(me)} role={me.role} /><span className="fake">Share information, ask a question or publish an article</span></Link>
+        <Link className="card composer" to="/new"><Avatar name={nameOf(me)} role={me.role} src={me.avatar_url} /><span className="fake">Share information, ask a question or publish an article</span></Link>
       ) : (
         <div className="card row" style={{ justifyContent: 'space-between' }}><span>Join to publish, follow subjects and people, and send messages.</span><Link className="btn" to="/signup">Join Verum Agora</Link></div>
       )}
+
+      <Link to="/peace-quilt" className="card quilt-strip">
+        <div className="mini-quilt small" aria-hidden="true">
+          {Array.from({ length: 12 }, (_, i) => <i key={i} style={{ background: ['#7DD3FC', '#F9A8D4', '#C6F432', '#86EFAC', '#C4B5FD', '#FDBA74'][(i * 5) % 6], animationDelay: `${(i % 6) * 0.3}s` }} />)}
+        </div>
+        <span><b>The Peace Quilt</b><span className="note">Small, true peace stories, sewn into a living constellation.</span></span>
+      </Link>
 
       {noInterests && (
         <Empty title="Choose the subjects you care about">

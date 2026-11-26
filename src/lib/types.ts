@@ -7,6 +7,7 @@ export type Profile = {
   is_researcher: boolean;
   is_moderator: boolean;
   created_at: string;
+  avatar_url?: string | null;
 };
 export type Theme = { id: number; name: string; short: string };
 export type Region = { id: number; name: string };
@@ -71,4 +72,7 @@ export type Conversation = {
   last_sender: string | null;
   unread: number;
 };
-export type Message = { id: number; conversation_id: string; sender_id: string; body: string; created_at: string };
+export type Message = {
+  id: number; conversation_id: string; sender_id: string; body: string; created_at: string;
+  attachment_path?: string | null; attachment_kind?: MediaKind | null; attachment_name?: string | null;
+};
