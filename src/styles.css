@@ -328,7 +328,10 @@ textarea.tall { min-height: 360px; }
 .subj-grid > :nth-child(3n+2) { animation-delay: .05s; } .subj-grid > :nth-child(3n) { animation-delay: .1s; }
 
 .orb { animation: orb-breathe 4s ease-in-out infinite; }
-main { background: radial-gradient(1200px 400px at 10% -10%, #C6F43210, transparent 60%), radial-gradient(900px 400px at 100% 0%, #7DD3FC0c, transparent 60%); background-size: 140% 140%; animation: glow-drift 30s ease-in-out infinite; }
+main { position: relative; isolation: isolate; overflow-x: clip; }
+main::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(1200px 400px at 10% -10%, #C6F43210, transparent 60%), radial-gradient(900px 400px at 100% 0%, #7DD3FC0c, transparent 60%); animation: glow-shift 30s ease-in-out infinite; will-change: transform; }
+@keyframes glow-shift { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(3%, 2%, 0); } }
+@media (prefers-reduced-motion: reduce) { main::before { animation: none; } }
 
 .card { transition: border-color .25s, box-shadow .25s, transform .25s; }
 article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color: #C6F43240; box-shadow: 0 8px 28px #0008, 0 0 0 1px #C6F43214; }

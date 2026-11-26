@@ -52,12 +52,16 @@ type P = { qx: number; qy: number; qs: number; cx: number; cy: number };
 
 export function Constellation({ stories, themes, threads, mode, roleFilter, selected, onSelect }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const st = useRef({ t: mode as number, target: mode as number, raf: 0, pos: new Map<number, P>(), labels: [] as [string, number, number][], stars: [] as number[][], W: 0, H: 0 });
+  const st = useRef({
+    t: mode as number, target: mode as number, raf: 0, from: mode as number, start: 0,
+    pos: new Map<number, P>(), labels: [] as [string, number, number][], stars: [] as number[][], W: 0, H: 0,
+    starLayer: null as HTMLCanvasElement | null, glows: new Map<string, HTMLCanvasElement>(), byId: new Map<number, Story>(),
+  });
   const props = useRef({ stories, themes, threads, roleFilter, selected });
   props.current = { stories, themes, threads, roleFilter, selected };
   const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const ease = (x: number) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+  const ease = (v: number) => { const x = Math.max(0, Math.min(1, v)); return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
   const lerp = (a: number, b: number, e: number) => a + (b - a) * e;
 
   function layout() {
@@ -65,7 +69,7 @@ export function Constellation({ stories, themes, threads, mode, roleFilter, sele
     if (!cv) return;
     const s = st.current;
     const r = cv.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(2, window.devicePixelRatio || 1); // 3x phone screens gain nothing visible but cost 2x the work
     s.W = r.width; s.H = r.height;
     cv.width = s.W * dpr; cv.height = s.H * dpr;
     cv.getContext('2d')!.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -97,6 +101,30 @@ export function Constellation({ stories, themes, threads, mode, roleFilter, sele
       s.labels.push([th.short.toUpperCase(), tx, ty + cr + 18]);
     });
     if (!s.stars.length) for (let i = 0; i < 150; i++) s.stars.push([Math.random(), Math.random(), Math.random() * 1.1 + 0.2, Math.random()]);
+    s.byId = new Map(stories.map((x) => [x.id, x]));
+    // Stars are drawn once into their own layer, then faded in as a single image.
+    const sl = document.createElement('canvas');
+    sl.width = cv.width; sl.height = cv.height;
+    const sc = sl.getContext('2d')!;
+    sc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    s.stars.forEach((p) => { sc.fillStyle = `rgba(238,242,234,${0.15 + 0.4 * p[3]})`; sc.beginPath(); sc.arc(p[0] * s.W, p[1] * s.H, p[2], 0, 7); sc.fill(); });
+    s.starLayer = sl;
+  }
+
+  // A soft glow per colour, rendered once and reused (canvas blur on every piece, every frame, is what made phones stutter).
+  function glow(col: string) {
+    const s = st.current;
+    let g = s.glows.get(col);
+    if (!g) {
+      g = document.createElement('canvas');
+      g.width = g.height = 64;
+      const c = g.getContext('2d')!;
+      const rg = c.createRadialGradient(32, 32, 2, 32, 32, 30);
+      rg.addColorStop(0, col + 'aa'); rg.addColorStop(0.35, col + '44'); rg.addColorStop(1, col + '00');
+      c.fillStyle = rg; c.fillRect(0, 0, 64, 64);
+      s.glows.set(col, g);
+    }
+    return g;
   }
 
   function draw() {
@@ -109,9 +137,9 @@ export function Constellation({ stories, themes, threads, mode, roleFilter, sele
     const { W, H } = s;
     ctx.fillStyle = '#050605';
     ctx.fillRect(0, 0, W, H);
-    if (e > 0) s.stars.forEach((p) => { ctx.fillStyle = `rgba(238,242,234,${e * (0.15 + 0.4 * p[3])})`; ctx.beginPath(); ctx.arc(p[0] * W, p[1] * H, p[2], 0, 7); ctx.fill(); });
+    if (e > 0 && s.starLayer) { ctx.globalAlpha = e; ctx.drawImage(s.starLayer, 0, 0, W, H); ctx.globalAlpha = 1; }
     const at = (id: number): [number, number] => { const p = s.pos.get(id)!; return [lerp(p.qx, p.cx, e), lerp(p.qy, p.cy, e)]; };
-    const byId = new Map(stories.map((x) => [x.id, x]));
+    const byId = s.byId;
     const la = Math.max(0, (e - 0.45) / 0.55);
     if (la > 0) {
       threads.forEach((l) => {
@@ -141,10 +169,10 @@ export function Constellation({ stories, themes, threads, mode, roleFilter, sele
       const col = ROLE_COLORS[x.role] || '#EEF2EA';
       const dim = roleFilter && x.role !== roleFilter;
       const sz = lerp(p.qs, x.id === selected ? 14 : 10, e), rad = lerp(4, sz / 2, e);
+      if (e > 0.05) { ctx.globalAlpha = (dim ? 0.15 : 1) * e; const gs = sz + 26; ctx.drawImage(glow(col), px - gs / 2, py - gs / 2, gs, gs); }
       ctx.globalAlpha = dim ? 0.15 : 1;
-      ctx.shadowColor = col; ctx.shadowBlur = e * 16; ctx.fillStyle = col;
+      ctx.fillStyle = col;
       ctx.beginPath(); ctx.roundRect(px - sz / 2, py - sz / 2, sz, sz, rad); ctx.fill();
-      ctx.shadowBlur = 0;
       if (e < 0.6 && p.qs > 22) {
         ctx.strokeStyle = `rgba(5,6,5,${0.5 * (1 - e / 0.6)})`; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.roundRect(px - sz / 2 + 4, py - sz / 2 + 4, sz - 8, sz - 8, 2); ctx.stroke(); ctx.setLineDash([]);
@@ -154,18 +182,21 @@ export function Constellation({ stories, themes, threads, mode, roleFilter, sele
     });
   }
 
+  // Time-based, so it takes the same 0.9 s on every phone, whatever its frame rate.
   function kick() {
     const s = st.current;
     cancelAnimationFrame(s.raf);
-    const tick = () => {
-      if (s.t !== s.target) {
-        const d = reduce ? 1 : 0.02;
-        s.t = s.target > s.t ? Math.min(s.target, s.t + d) : Math.max(s.target, s.t - d);
-        draw();
-        s.raf = requestAnimationFrame(tick);
-      } else draw();
+    if (reduce) { s.t = s.target; draw(); return; }
+    s.from = s.t; s.start = -1;
+    const dur = 900 * Math.abs(s.target - s.from);
+    const tick = (now: number) => {
+      if (s.start < 0) s.start = now; // start the clock on the first frame
+      const k = dur ? Math.max(0, Math.min(1, (now - s.start) / dur)) : 1;
+      s.t = s.from + (s.target - s.from) * k;
+      draw();
+      if (k < 1) s.raf = requestAnimationFrame(tick);
     };
-    tick();
+    s.raf = requestAnimationFrame(tick);
   }
 
   useEffect(() => {
