@@ -9,7 +9,7 @@
   --lime: #C6F432;
   --danger: #FF8A8A;
   --display: "Sora", system-ui, sans-serif;
-  --body: "DM Sans", system-ui, -apple-system, sans-serif;
+  --body: "DM Sans Variable", "DM Sans", system-ui, -apple-system, sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -485,3 +485,13 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 .terms-form select, .terms-form input { min-height: 36px; }
 .terms-form input { flex: 1; min-width: 160px; }
 .terms-form .note:last-child { flex-basis: 100%; }
+
+/* ---------- Phase 6: feed controls, connections ---------- */
+.note.why { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.fc-summary { color: var(--lime); }
+.fc { gap: 14px; }
+.fc-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.lang-opt.sm { font-size: 13px; padding: 5px 11px; min-height: 32px; }
+.lang-opt.off { text-decoration: line-through; opacity: .55; border-style: dashed; }
+.conn { text-decoration: none; color: inherit; gap: 6px; }
+.conn:hover { border-color: #C6F43255; }

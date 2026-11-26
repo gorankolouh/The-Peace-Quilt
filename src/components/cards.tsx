@@ -64,7 +64,7 @@ export function ReportButton({ type, id, label = 'Report' }: { type: string; id:
   }
   return (
     <>
-      <button aria-label={label} title={label} onClick={() => (me ? setOpen(true) : nav('/login'))}>{Icon.flag()}</button>
+      <button aria-label={label} title={label} onClick={() => (me ? setOpen(true) : nav(`/notice?url=${encodeURIComponent(window.location.origin + (type === 'post' ? `/post/${id}` : type === 'story' ? `/story/${id}` : window.location.pathname))}`))}>{Icon.flag()}</button>
       {open && (
         <Modal title="Report this content" onClose={() => { setOpen(false); setSent(false); }}>
           {sent ? (

@@ -48,7 +48,7 @@ export async function suggestedProfiles(me: string | undefined): Promise<Profile
   rows.forEach((p) => profileCache.set(p.id, p));
   return rows;
 }
-export async function updateMyProfile(id: string, patch: Partial<Pick<Profile, 'username' | 'display_name' | 'role' | 'bio' | 'message_privacy'>>) {
+export async function updateMyProfile(id: string, patch: Partial<Pick<Profile, 'username' | 'display_name' | 'role' | 'bio' | 'message_privacy' | 'feed_languages' | 'feed_sourced_only' | 'muted_subjects'>>) {
   check(await supabase.from('profiles').update(patch).eq('id', id));
   profileCache.delete(id);
 }
@@ -309,21 +309,32 @@ async function withAuthors(posts: Post[]): Promise<Post[]> {
   return posts;
 }
 const PEACE_SUBJECT = 2;
-export async function interestsFeed(interests: number[]): Promise<FeedItem[]> {
+/** The reader's own feed controls. Empty language list = all languages. */
+export type FeedPrefs = { languages: string[]; sourcedOnly: boolean; muted: number[] };
+export const NO_PREFS: FeedPrefs = { languages: [], sourcedOnly: false, muted: [] };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyPrefs(q: any, f: FeedPrefs) {
+  if (f.languages.length) q = q.in('language', f.languages);
+  if (f.muted.length) q = q.not('subject_ids', 'ov', `{${f.muted.join(',')}}`);
+  return q;
+}
+const sourced = (f: FeedPrefs) => (p: Post) => !f.sourcedOnly || (p.claim_count ?? 0) > 0 || (p.sources?.length ?? 0) > 0;
+
+export async function interestsFeed(interests: number[], f: FeedPrefs = NO_PREFS): Promise<FeedItem[]> {
   if (!interests.length) return [];
-  const posts = check(await supabase.from('posts_v').select(POST_COLS).overlaps('subject_ids', interests).order('created_at', { ascending: false }).limit(40)) as Post[];
+  const posts = (check(await applyPrefs(supabase.from('posts_v').select(POST_COLS).overlaps('subject_ids', interests), f).order('created_at', { ascending: false }).limit(60)) as Post[]).filter(sourced(f)).slice(0, 40);
   const stories = interests.includes(PEACE_SUBJECT) ? await newestStories(10) : [];
   await withAuthors(posts);
   return merge(stories, posts);
 }
-export async function latestFeed(): Promise<FeedItem[]> {
-  const posts = check(await supabase.from('posts_v').select(POST_COLS).order('created_at', { ascending: false }).limit(40)) as Post[];
+export async function latestFeed(f: FeedPrefs = NO_PREFS): Promise<FeedItem[]> {
+  const posts = (check(await applyPrefs(supabase.from('posts_v').select(POST_COLS), f).order('created_at', { ascending: false }).limit(60)) as Post[]).filter(sourced(f)).slice(0, 40);
   return merge([], await withAuthors(posts));
 }
-export async function exploreFeed(interests: number[]): Promise<FeedItem[]> {
-  let q = supabase.from('posts_v').select(POST_COLS);
+export async function exploreFeed(interests: number[], f: FeedPrefs = NO_PREFS): Promise<FeedItem[]> {
+  let q = applyPrefs(supabase.from('posts_v').select(POST_COLS), f);
   if (interests.length) q = q.not('subject_ids', 'ov', `{${interests.join(',')}}`);
-  const posts = check(await q.order('created_at', { ascending: false }).limit(40)) as Post[];
+  const posts = (check(await q.order('created_at', { ascending: false }).limit(60)) as Post[]).filter(sourced(f)).slice(0, 40);
   const stories = interests.includes(PEACE_SUBJECT) ? [] : await newestStories(6);
   await withAuthors(posts);
   return merge(stories, posts);
@@ -509,4 +520,26 @@ export async function equivalentTerms(term: string): Promise<string[]> {
 }
 export async function linkTerms(term: string, canonical: string) {
   check(await supabase.from('term_links').insert({ term: term.trim().toLowerCase(), canonical: canonical.trim().toLowerCase() }));
+}
+
+
+/* ---------- Phase 6: people, connected discussions, open notices ---------- */
+export async function subjectPeople(sid: number): Promise<{ profile: Profile; contributions: number; last_at: string }[]> {
+  const rows = check(await supabase.rpc('subject_people', { sid, max_results: 12 })) as { user_id: string; contributions: number; last_at: string }[];
+  const map = await getProfiles(rows.map((r) => r.user_id));
+  return rows.filter((r) => map.get(r.user_id)).map((r) => ({ profile: map.get(r.user_id)!, contributions: r.contributions, last_at: r.last_at }));
+}
+export type ConnectedTopic = { kind: 'topic' | 'event'; topic: string; contributions: number; languages: string[]; countries: string[]; last_at: string };
+export async function connectedTopics(): Promise<ConnectedTopic[]> {
+  return check(await supabase.rpc('connected_topics', { max_results: 100 })) as ConnectedTopic[];
+}
+export async function submitNotice(n: { reporter: string | null; target_type: string; target_id: string; reason: string; details: string; name: string; email: string; url: string }) {
+  check(await supabase.from('reports').insert({
+    reporter_id: n.reporter, target_type: n.target_type, target_id: n.target_id, reason: n.reason, details: n.details.trim(),
+    notifier_name: n.name.trim() || null, notifier_email: n.email.trim() || null, content_url: n.url.trim(), good_faith: true,
+  }));
+}
+export async function profileIdByUsername(username: string): Promise<string | null> {
+  const r = check(await supabase.from('profiles').select('id').eq('username', username).maybeSingle()) as { id: string } | null;
+  return r?.id ?? null;
 }

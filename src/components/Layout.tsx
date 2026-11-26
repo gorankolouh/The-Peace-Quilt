@@ -92,6 +92,7 @@ export function Layout() {
   ];
   const extra: Item[] = [
     ...(me ? [['/notifications', 'nav.notifications', Icon.bell] as Item] : []),
+    ['/connections', 'nav.connections', Icon.link],
     ['/search', 'nav.search', Icon.search],
     ['/peace-quilt', 'nav.quilt', Icon.star],
     ['/transparency', 'nav.transparency', Icon.shield],
@@ -120,7 +121,7 @@ export function Layout() {
         </nav>
         <Link className="btn add" to="/new">{t('nav.contribute')}</Link>
         <div className="foot">
-          <Link to="/rules">{t('nav.rules')}</Link> · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · <Link to="/imprint">Imprint</Link>
+          <Link to="/rules">{t('nav.rules')}</Link> · <Link to="/notice">{t('nav.notice')}</Link> · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · <Link to="/imprint">Imprint</Link>
         </div>
       </aside>
       <main id="main">

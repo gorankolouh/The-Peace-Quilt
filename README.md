@@ -61,6 +61,15 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 2. Deploy the function: `supabase functions deploy translate` (or create a function named `translate` in the Supabase dashboard and paste `supabase/functions/translate/index.ts`).
 3. Add the key as a secret named `DEEPL_API_KEY` (Dashboard → Edge Functions → Secrets). Never put it in the front end.
 
+## Phase 6: reader controls, people, connections, open notices, hardening
+
+- **Feed controls you own** ("Adjust feed"): choose which languages to see, show only contributions with sources or documented claims, and hide subjects. Saved with your profile (or in the browser when logged out). Active filters are always shown under "Why you see this".
+- **People contributing here** on every subject page: most recent contributors first, never ranked by followers.
+- **Connected discussions** (`/connections`): topics and events that link several contributions, across languages and countries, with a filter for cross-language connections only.
+- **Notice of illegal content without an account** (`/notice`, DSA Art. 16): link, category, explanation, optional name and email, good-faith confirmation; the database enforces the explanation and caps anonymous notices against flooding. The flag button sends logged-out visitors here.
+- **Self-hosted fonts:** Google Fonts removed, so no visitor IP addresses go to Google.
+- **Security headers:** Content-Security-Policy (only our own scripts; connections only to our Supabase project), HSTS, cross-origin isolation for popups, long-term caching of built assets.
+
 ## Planned next (not built yet)
 
 - Suggested topic links (detecting likely equivalents automatically, confirmed by people)
@@ -70,7 +79,7 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql`, `0007_moderation_records_privacy.sql` and `0008_translation_cross_language.sql`, in that order. Each one is additive and keeps existing data.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql`, `0007_moderation_records_privacy.sql`, `0008_translation_cross_language.sql` and `0009_feed_controls_people_notices.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 

@@ -1,6 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+// Fonts are served from our own domain: no visitor data goes to Google Fonts.
+import '@fontsource/sora/500.css';
+import '@fontsource/sora/600.css';
+import '@fontsource/sora/700.css';
+import '@fontsource-variable/dm-sans/opsz.css';
 import './styles.css';
 import { AuthProvider, useAuth } from './lib/auth';
 import { configured, DEMO } from './lib/supabase';
@@ -23,6 +28,8 @@ import ProfilePage from './pages/ProfilePage';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import Rules from './pages/Rules';
+import Connections from './pages/Connections';
+import Notice from './pages/Notice';
 import { I18nProvider } from './lib/i18n';
 import { Login, Signup, ResetPassword, Setup } from './pages/Auth';
 import { Imprint, Privacy, Terms } from './pages/Legal';
@@ -84,6 +91,8 @@ function App() {
           <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
           <Route path="/rules" element={<Rules />} />
+          <Route path="/connections" element={<Connections />} />
+          <Route path="/notice" element={<Notice />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/imprint" element={<Imprint />} />

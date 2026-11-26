@@ -2,10 +2,11 @@ import { useT } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PostCard } from '../components/cards';
-import { Empty, ErrorNote, Spinner } from '../components/ui';
+import { Avatar, Empty, ErrorNote, Spinner } from '../components/ui';
+import { nameOf } from '../lib/format';
 import { useAuth } from '../lib/auth';
-import { getInterests, setInterests, subjectCounts, subjectPosts } from '../lib/data';
-import type { Post } from '../lib/types';
+import { getInterests, setInterests, subjectCounts, subjectPeople, subjectPosts } from '../lib/data';
+import type { Post, Profile } from '../lib/types';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 
 export function SubjectsIndex() {
@@ -87,10 +88,32 @@ export function SubjectPage() {
           <div><b>The Peace Quilt</b><p className="sub">A collection of small, true peace stories, sewn into a living constellation.</p></div>
         </Link>
       )}
+      <SubjectPeople sid={subject.id} />
       <ErrorNote error={err} />
       {!posts && !err && <Spinner />}
       {posts?.map((p) => <PostCard key={p.id} p={p} />)}
       {posts && posts.length === 0 && <Empty title="No contributions here yet"><Link className="btn" to="/new">Start the discussion</Link></Empty>}
     </div>
+  );
+}
+
+/** People who recently contributed to this subject, newest first. No follower numbers, no ranking. */
+function SubjectPeople({ sid }: { sid: number }) {
+  const tr = useT();
+  const [people, setPeople] = useState<{ profile: Profile; contributions: number }[] | null>(null);
+  useEffect(() => { setPeople(null); subjectPeople(sid).then(setPeople).catch(() => setPeople([])); }, [sid]);
+  if (!people?.length) return null;
+  return (
+    <section className="card people-hits" aria-label={tr('people.title')}>
+      <b>{tr('people.title')}</b>
+      <span className="note">{tr('people.help')}</span>
+      <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+        {people.map(({ profile: p, contributions }) => (
+          <Link key={p.id} to={`/u/${p.username}`} className="person-chip" title={`${contributions}`}>
+            <Avatar name={nameOf(p)} role={p.role} size={28} src={p.avatar_url} /><span>{nameOf(p)}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

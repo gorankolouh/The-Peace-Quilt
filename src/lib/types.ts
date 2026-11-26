@@ -9,6 +9,9 @@ export type Profile = {
   created_at: string;
   avatar_url?: string | null;
   message_privacy?: 'everyone' | 'following' | 'nobody';
+  feed_languages?: string[];
+  feed_sourced_only?: boolean;
+  muted_subjects?: number[];
 };
 export type Theme = { id: number; name: string; short: string };
 export type Region = { id: number; name: string };

@@ -333,6 +333,24 @@ function rpc(fn: string, args: Row): unknown {
   }
   if (fn === 'delete_my_account') { me = null; return null; }
   if (fn === 'claim_conflicts') return conflictsFor(args.pid);
+  if (fn === 'subject_people') {
+    const by = new Map<string, { c: number; last: string }>();
+    db.posts.filter((p) => !p.hidden && p.author_id !== me && view('posts_v').find((v) => v.id === p.id)?.subject_ids.includes(Number(args.sid)))
+      .forEach((p) => { const x = by.get(p.author_id) ?? { c: 0, last: '' }; x.c++; if (p.created_at > x.last) x.last = p.created_at; by.set(p.author_id, x); });
+    return [...by.entries()].sort((a, b) => (a[1].last < b[1].last ? 1 : -1)).map(([user_id, x]) => ({ user_id, contributions: x.c, last_at: x.last }));
+  }
+  if (fn === 'connected_topics') {
+    const canon = (t: string) => db.term_links.find((l) => l.term === t)?.canonical ?? t;
+    const groups = new Map<string, { kind: string; topic: string; ids: Set<number>; langs: Set<string>; countries: Set<string>; last: string }>();
+    const add = (kind: string, topic: string, p: Row) => {
+      const k = kind + topic; const g = groups.get(k) ?? { kind, topic, ids: new Set(), langs: new Set(), countries: new Set(), last: '' };
+      g.ids.add(p.id); if (p.language) g.langs.add(p.language); if (p.country) g.countries.add(p.country); if (p.created_at > g.last) g.last = p.created_at; groups.set(k, g);
+    };
+    view('posts_v').forEach((p) => p.tags.forEach((t: string) => add('topic', canon(t), p)));
+    db.claims.filter((c) => c.event_tag).forEach((c) => { const p = view('posts_v').find((v) => v.id === c.post_id); if (p) add('event', canon(c.event_tag), p); });
+    return [...groups.values()].filter((g) => g.ids.size >= 2).sort((a, b) => (a.last < b.last ? 1 : -1))
+      .map((g) => ({ kind: g.kind, topic: g.topic, contributions: g.ids.size, languages: [...g.langs], countries: [...g.countries], last_at: g.last }));
+  }
   if (fn === 'equivalent_terms') {
     const t = String(args.t).toLowerCase().trim();
     const c = db.term_links.find((l) => l.term === t)?.canonical ?? t;

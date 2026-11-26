@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { PostCard, StoryCard } from '../components/cards';
 import { Avatar, Empty, ErrorNote, Spinner } from '../components/ui';
 import { useAuth } from '../lib/auth';
-import { exploreFeed, followingFeed, getInterests, getRegions, getThemes, interestsFeed, latestFeed } from '../lib/data';
+import { exploreFeed, followingFeed, getInterests, getRegions, getThemes, interestsFeed, latestFeed, NO_PREFS, updateMyProfile, type FeedPrefs } from '../lib/data';
 import { nameOf } from '../lib/format';
 import type { FeedItem, Region, Theme } from '../lib/types';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
-import { useT } from '../lib/i18n';
+import { LANGS, useT } from '../lib/i18n';
+import type { Profile } from '../lib/types';
 
 type Tab = 'interests' | 'following' | 'latest' | 'explore';
 
@@ -19,8 +20,20 @@ const WHY: Record<Tab, string> = {
 };
 
 export default function Feed() {
-  const { me, loading } = useAuth();
+  const { me, loading, refresh } = useAuth();
   const t = useT();
+  const [prefs, setPrefsState] = useState<FeedPrefs>(NO_PREFS);
+  const [showPrefs, setShowPrefs] = useState(false);
+  useEffect(() => { setPrefsState(readPrefs(me)); }, [me]);
+  async function savePrefs(next: FeedPrefs) {
+    setPrefsState(next);
+    if (me) {
+      try { await updateMyProfile(me.id, { feed_languages: next.languages, feed_sourced_only: next.sourcedOnly, muted_subjects: next.muted }); await refresh(); } catch { /* kept locally */ }
+    } else {
+      try { localStorage.setItem('va-feed', JSON.stringify(next)); } catch { /* storage unavailable */ }
+    }
+  }
+  const prefKey = JSON.stringify(prefs);
   const subjects = useSubjects();
   const [tab, setTab] = useState<Tab>('interests');
   const [interests, setInterests] = useState<number[] | null>(null);
@@ -42,14 +55,14 @@ export default function Feed() {
     let live = true;
     setItems(null); setErr(null);
     const load = (): Promise<FeedItem[]> => {
-      if (tab === 'interests') return interestsFeed(interests);
+      if (tab === 'interests') return interestsFeed(interests, prefs);
       if (tab === 'following' && me) return followingFeed(me.id);
-      if (tab === 'explore') return exploreFeed(interests);
-      return latestFeed();
+      if (tab === 'explore') return exploreFeed(interests, prefs);
+      return latestFeed(prefs);
     };
     load().then((x) => live && setItems(x)).catch((e) => live && setErr(e.message));
     return () => { live = false; };
-  }, [tab, me, loading, interests]);
+  }, [tab, me?.id, loading, interests, prefKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tabs: [Tab, string][] = me
     ? [['interests', t('feed.interests')], ['following', t('feed.following')], ['latest', t('feed.latest')], ['explore', t('feed.explore')]]
@@ -66,7 +79,12 @@ export default function Feed() {
           ))}
         </div>
       </div>
-      <p className="note why"><b>{t('feed.why')}</b> {t('feed.why.' + tab) === 'feed.why.' + tab ? WHY[tab] : t('feed.why.' + tab)}</p>
+      <div className="note why">
+        <span><b>{t('feed.why')}</b> {t('feed.why.' + tab) === 'feed.why.' + tab ? WHY[tab] : t('feed.why.' + tab)}</span>
+        {tab !== 'following' && <PrefsSummary prefs={prefs} />}
+        {tab !== 'following' && <button className="linkbtn" onClick={() => setShowPrefs((x) => !x)} aria-expanded={showPrefs}>{t('fc.button')}</button>}
+      </div>
+      {showPrefs && tab !== 'following' && <FeedControls prefs={prefs} onChange={savePrefs} onClose={() => setShowPrefs(false)} />}
 
       {tab === 'interests' && interests && interests.length > 0 && (
         <div className="row subj-row">
@@ -109,5 +127,53 @@ export default function Feed() {
         </Empty>
       )}
     </div>
+  );
+}
+
+function readPrefs(me: Profile | null): FeedPrefs {
+  if (me) return { languages: me.feed_languages ?? [], sourcedOnly: !!me.feed_sourced_only, muted: me.muted_subjects ?? [] };
+  try { return { ...NO_PREFS, ...JSON.parse(localStorage.getItem('va-feed') || '{}') }; } catch { return NO_PREFS; }
+}
+
+function PrefsSummary({ prefs }: { prefs: FeedPrefs }) {
+  const t = useT();
+  const subjects = useSubjects();
+  const bits: string[] = [];
+  if (prefs.languages.length) bits.push(prefs.languages.map((c) => LANGS.find(([k]) => k === c)?.[1] ?? c).join(', '));
+  if (prefs.sourcedOnly) bits.push(t('fc.sourced.short'));
+  if (prefs.muted.length) bits.push(t('fc.hidden.short') + ' ' + prefs.muted.map((id) => subjects.find((s) => s.id === id)?.name).filter(Boolean).join(', '));
+  if (!bits.length) return null;
+  return <span className="fc-summary">{t('fc.yours')} {bits.join(' · ')}</span>;
+}
+
+/** Controls the reader owns: languages, sourced-only, hidden subjects. Nothing here is decided by popularity. */
+function FeedControls({ prefs, onChange, onClose }: { prefs: FeedPrefs; onChange: (p: FeedPrefs) => void; onClose: () => void }) {
+  const t = useT();
+  const subjects = useSubjects();
+  const toggle = <T,>(xs: T[], x: T) => (xs.includes(x) ? xs.filter((y) => y !== x) : [...xs, x]);
+  return (
+    <section className="card fc" aria-label={t('fc.title')}>
+      <div className="row" style={{ justifyContent: 'space-between' }}><b>{t('fc.title')}</b><button className="linkbtn" onClick={onClose}>{t('fc.close')}</button></div>
+      <div>
+        <span className="note">{t('fc.languages')}</span>
+        <div className="fc-opts">
+          {LANGS.map(([code, name]) => (
+            <button key={code} type="button" className={'lang-opt' + (prefs.languages.includes(code) ? ' on' : '')} aria-pressed={prefs.languages.includes(code)}
+              onClick={() => onChange({ ...prefs, languages: toggle(prefs.languages, code) })}>{name}</button>
+          ))}
+        </div>
+      </div>
+      <label className="check"><input type="checkbox" checked={prefs.sourcedOnly} onChange={(e) => onChange({ ...prefs, sourcedOnly: e.target.checked })} /><span>{t('fc.sourced')}</span></label>
+      <div>
+        <span className="note">{t('fc.hide')}</span>
+        <div className="fc-opts">
+          {subjects.map((s) => (
+            <button key={s.id} type="button" className={'lang-opt sm' + (prefs.muted.includes(s.id) ? ' off' : '')} aria-pressed={prefs.muted.includes(s.id)}
+              onClick={() => onChange({ ...prefs, muted: toggle(prefs.muted, s.id) })}>{s.name}</button>
+          ))}
+        </div>
+      </div>
+      {(prefs.languages.length > 0 || prefs.sourcedOnly || prefs.muted.length > 0) && <button className="btn ghost sm" onClick={() => onChange(NO_PREFS)}>{t('fc.reset')}</button>}
+    </section>
   );
 }
