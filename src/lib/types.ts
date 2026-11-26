@@ -53,7 +53,29 @@ export type Post = {
   subject_ids: number[];
   subtopic_ids: number[];
   tags: string[];
+  nature?: Nature;
+  claim_count?: number;
+  signal_context?: boolean;
+  signal_conflict?: boolean;
+  signal_correction?: boolean;
 };
+export type Nature = 'factual' | 'opinion' | 'mixed';
+export type Evidence = { id: number; claim_id: number; added_by: string; url: string; title: string | null; stance: 'supports' | 'contradicts' | 'context'; note: string | null; domain: string; created_at: string };
+export type Claim = {
+  id: number; post_id: number; created_by: string; statement: string; event_tag: string | null; metric: string | null;
+  value: number | null; unit: string | null; occurred_on: string | null; location: string | null; created_at: string;
+  evidence: Evidence[];
+};
+export type ClaimInput = { statement: string; event_tag: string; metric: string; value: string; unit: string; occurred_on: string; location: string; source: string };
+export type Conflict = { claim_id: number; other_claim_id: number; other_post_id: number; kind: 'number' | 'date' | 'place'; mine_value: number | null; other_value: number | null; ratio: number | null; other?: Claim; post?: Post };
+export type ReviewStatus = 'open' | 'no_action' | 'context' | 'correction' | 'overturned';
+export type Review = {
+  id: number; post_id: number; claim_id: number | null; request_text: string; status: ReviewStatus; decision_text: string | null;
+  decided_at: string | null; created_at: string; requested_by_me?: boolean; appeal_status?: string | null; appeal_decision?: string | null; on_my_post?: boolean;
+};
+export type Appeal = { id: number; review_id: number; author_id: string; appeal_text: string; status: string; decision_text: string | null; created_at: string };
+export type EventClaim = { claim_id: number; post_id: number; statement: string; metric: string | null; value: number | null; unit: string | null; occurred_on: string | null; location: string | null; created_at: string; supports: number; contradicts: number; context: number; independent_sources: number };
+export type ContentReport = { id: number; reporter_id: string | null; target_type: string; target_id: string; reason: string; details: string; status: string; decision: string | null; created_at: string };
 export type Related = {
   post: Post;
   score: number;

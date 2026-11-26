@@ -11,6 +11,9 @@ import Feed from './pages/Feed';
 import ConstellationPage from './pages/ConstellationPage';
 import { SubjectPage, SubjectsIndex } from './pages/Subjects';
 import Search from './pages/Search';
+import Compare from './pages/Compare';
+import ReviewDesk from './pages/ReviewDesk';
+import Transparency from './pages/Transparency';
 import StoryPage from './pages/StoryPage';
 import PostPage from './pages/PostPage';
 import Compose from './pages/Compose';
@@ -65,6 +68,9 @@ function App() {
           <Route path="/subjects" element={<SubjectsIndex />} />
           <Route path="/s/:slug" element={<SubjectPage />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/compare/:tag" element={<Compare />} />
+          <Route path="/transparency" element={<Transparency />} />
+          <Route path="/review" element={<RequireAuth><ReviewDesk /></RequireAuth>} />
           <Route path="/post/:id/edit" element={<RequireAuth><Compose /></RequireAuth>} />
           <Route path="/story/:id" element={<StoryPage />} />
           <Route path="/post/:id" element={<PostPage />} />

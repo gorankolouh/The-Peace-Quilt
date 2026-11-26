@@ -5,7 +5,8 @@ import { useAuth } from '../lib/auth';
 import { CONSENT_LABEL, COUNTRIES, LANGUAGES, POST_KINDS, STORY_ROLES } from '../lib/constants';
 import { createPost, createStory, getPost, getRegions, getThemes, updatePost } from '../lib/data';
 import { kindOf, removeMedia, uploadMedia } from '../lib/media';
-import type { PostKind, Region, Source, Theme } from '../lib/types';
+import type { ClaimInput, Nature, PostKind, Region, Source, Theme } from '../lib/types';
+import { ClaimFields, NATURE_LABEL, emptyClaim } from '../components/transparency';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 
 type Kind = PostKind | 'story';
@@ -38,6 +39,8 @@ export default function Compose() {
   const [language, setLanguage] = useState('en');
   const [country, setCountry] = useState('');
   const [sources, setSources] = useState<Source[]>([]);
+  const [nature, setNature] = useState<Nature>('mixed');
+  const [claims, setClaims] = useState<ClaimInput[]>([]);
   const [file, setFile] = useState<File | null>(null);
   // Peace story fields
   const [themes, setThemes] = useState<Theme[]>([]);
@@ -55,7 +58,7 @@ export default function Compose() {
     getPost(editId).then((p) => {
       if (!p || !p.is_mine) { setErr('You can only edit your own contributions.'); setLoaded(true); return; }
       setKind(p.kind); setTitle(p.title ?? ''); setBody(p.body); setSubj(p.subject_ids || []); setTopics(p.subtopic_ids || []);
-      setTagText((p.tags || []).join(', ')); setLanguage(p.language || 'en'); setCountry(p.country ?? ''); setSources(p.sources || []);
+      setTagText((p.tags || []).join(', ')); setLanguage(p.language || 'en'); setCountry(p.country ?? ''); setSources(p.sources || []); setNature(p.nature ?? 'mixed');
       setLoaded(true);
     }).catch((e) => { setErr(e.message); setLoaded(true); });
   }, [editId]);
@@ -96,7 +99,7 @@ export default function Compose() {
     let media: { path: string; kind: string } | null = null;
     try {
       if (editId) {
-        await updatePost(editId, { title: needsTitle || title.trim() ? title.trim() || null : null, body: body.trim(), language, country: country || null, sources: cleanSources, subjects: subj, subtopics: topics, tags });
+        await updatePost(editId, { title: needsTitle || title.trim() ? title.trim() || null : null, body: body.trim(), language, country: country || null, sources: cleanSources, subjects: subj, subtopics: topics, tags, nature });
         nav(`/post/${editId}`);
         return;
       }
@@ -108,6 +111,7 @@ export default function Compose() {
         const id = await createPost(me.id, {
           kind, title: title.trim() || null, body: body.trim(), language, country: country || null, sources: cleanSources,
           media_path: media?.path ?? null, media_kind: media?.kind ?? null, subjects: subj, subtopics: topics, tags,
+          nature: kind === 'question' ? 'mixed' : nature, claims: kind === 'question' ? [] : claims,
         });
         nav(`/post/${id}`);
       }
@@ -187,6 +191,30 @@ export default function Compose() {
                 <option value="">Not specific</option>{COUNTRIES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
               </select></label>
             </div>
+            {kind !== 'question' && (
+              <fieldset className="radios">
+                <legend>This contribution is mainly…</legend>
+                <div className="row">
+                  {(['factual', 'opinion', 'mixed'] as Nature[]).map((n) => (
+                    <button type="button" key={n} aria-pressed={nature === n} className={'rc' + (nature === n ? ' on' : '')} onClick={() => setNature(n)}>{NATURE_LABEL[n]}</button>
+                  ))}
+                </div>
+                <span className="note">Opinions are protected and not fact-checked. Factual statements inside any contribution can be questioned with evidence.</span>
+              </fieldset>
+            )}
+            {kind !== 'question' && !editId && (
+              <fieldset className="radios">
+                <legend>Key factual claims (optional, up to 5)</legend>
+                <span className="note">List the main facts, such as numbers, dates and places. Others can then check them, add evidence and compare reports about the same event.</span>
+                {claims.map((c, i) => (
+                  <div key={i} className="claim-edit">
+                    <ClaimFields value={c} idp={`c${i}`} onChange={(v) => setClaims((x) => x.map((y, j) => (j === i ? v : y)))} />
+                    <button type="button" className="btn ghost sm" onClick={() => setClaims((x) => x.filter((_, j) => j !== i))}>Remove claim</button>
+                  </div>
+                ))}
+                {claims.length < 5 && <button type="button" className="btn ghost sm" onClick={() => setClaims((x) => [...x, emptyClaim()])}>Add a factual claim</button>}
+              </fieldset>
+            )}
             <fieldset className="radios">
               <legend>Sources and references (optional)</legend>
               {sources.map((s, i) => (

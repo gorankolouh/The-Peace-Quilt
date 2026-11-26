@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
-import type { Comment, Conversation, FeedItem, Message, Post, PostKind, Profile, Region, Related, Source, Story, Subject, Subtopic, Theme } from './types';
+import type { Appeal, Claim, ClaimInput, Comment, Conflict, ContentReport, EventClaim, Evidence, Nature, Review, ReviewStatus, Conversation, FeedItem, Message, Post, PostKind, Profile, Region, Related, Source, Story, Subject, Subtopic, Theme } from './types';
 
-export const POST_COLS = 'id,author_id,kind,title,body,media_path,media_kind,created_at,is_mine,like_count,comment_count,liked,language,country,sources,updated_at,subject_ids,subtopic_ids,tags';
+export const POST_COLS = 'id,author_id,kind,title,body,media_path,media_kind,created_at,is_mine,like_count,comment_count,liked,language,country,sources,updated_at,subject_ids,subtopic_ids,tags,nature,claim_count,signal_context,signal_conflict,signal_correction';
 
 function check<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
@@ -128,6 +128,7 @@ export type PostInput = {
   kind: PostKind; title: string | null; body: string; language: string; country: string | null;
   sources: Source[]; media_path: string | null; media_kind: string | null;
   subjects: number[]; subtopics: number[]; tags: string[];
+  nature?: Nature; claims?: ClaimInput[];
 };
 async function writeLinks(id: number, inp: Pick<PostInput, 'subjects' | 'subtopics' | 'tags'>, replace: boolean) {
   if (replace) {
@@ -146,14 +147,15 @@ async function writeLinks(id: number, inp: Pick<PostInput, 'subjects' | 'subtopi
 export async function createPost(me: string, inp: PostInput): Promise<number> {
   const res = check(await supabase.from('posts').insert({
     author_id: me, kind: inp.kind, title: inp.title, body: inp.body, language: inp.language, country: inp.country,
-    sources: inp.sources, media_path: inp.media_path, media_kind: inp.media_kind,
+    sources: inp.sources, media_path: inp.media_path, media_kind: inp.media_kind, ...(inp.nature ? { nature: inp.nature } : {}),
   }).select('id').single()) as { id: number };
   await writeLinks(res.id, inp, false);
+  for (const c of inp.claims ?? []) if (c.statement.trim().length >= 5) await addClaim(me, res.id, c);
   return res.id;
 }
 export async function updatePost(id: number, inp: Omit<PostInput, 'kind' | 'media_path' | 'media_kind'>) {
   check(await supabase.from('posts').update({
-    title: inp.title, body: inp.body, language: inp.language, country: inp.country, sources: inp.sources,
+    title: inp.title, body: inp.body, language: inp.language, country: inp.country, sources: inp.sources, ...(inp.nature ? { nature: inp.nature } : {}),
   }).eq('id', id));
   await writeLinks(id, inp, true);
 }
@@ -369,4 +371,83 @@ export async function followList(id: string, which: 'followers' | 'following'): 
 }
 export async function myFollowingSet(me: string): Promise<Set<string>> {
   return new Set(await followingIds(me));
+}
+
+
+/* ---------- Phase 2: information transparency ---------- */
+const clean = (t: string) => t.toLowerCase().replace(/^#/, '').replace(/\s+/g, ' ').trim();
+export async function addClaim(me: string, postId: number, c: ClaimInput): Promise<number> {
+  const value = c.value.trim() ? Number(c.value.replace(/[\s,]/g, '')) : null;
+  if (value !== null && (!Number.isFinite(value) || value < 0)) throw new Error('The number must be a positive number.');
+  const row = check(await supabase.from('claims').insert({
+    post_id: postId, created_by: me, statement: c.statement.trim(),
+    event_tag: clean(c.event_tag) || null, metric: clean(c.metric) || null, value, unit: c.unit.trim() || null,
+    occurred_on: c.occurred_on || null, location: c.location.trim() || null,
+  }).select('id').single()) as { id: number };
+  if (c.source.trim()) await addEvidence(me, row.id, { url: c.source.trim(), title: '', stance: 'supports', note: '' });
+  return row.id;
+}
+export async function deleteClaim(id: number) {
+  check(await supabase.from('claims').delete().eq('id', id));
+}
+export async function getClaims(postId: number): Promise<Claim[]> {
+  const claims = check(await supabase.from('claims').select('*').eq('post_id', postId).order('id')) as Omit<Claim, 'evidence'>[];
+  if (!claims.length) return [];
+  const ev = check(await supabase.from('claim_evidence').select('*').in('claim_id', claims.map((c) => c.id)).order('created_at')) as Evidence[];
+  await getProfiles(ev.map((e) => e.added_by));
+  return claims.map((c) => ({ ...c, evidence: ev.filter((e) => e.claim_id === c.id) }));
+}
+export async function addEvidence(me: string, claimId: number, e: { url: string; title: string; stance: string; note: string }) {
+  if (!/^https?:\/\//i.test(e.url)) throw new Error('Evidence links must start with http:// or https://');
+  check(await supabase.from('claim_evidence').insert({ claim_id: claimId, added_by: me, url: e.url, title: e.title.trim() || null, stance: e.stance, note: e.note.trim() || null }));
+}
+export async function deleteEvidence(id: number) {
+  check(await supabase.from('claim_evidence').delete().eq('id', id));
+}
+export async function getConflicts(postId: number): Promise<Conflict[]> {
+  const rows = check(await supabase.rpc('claim_conflicts', { pid: postId })) as Conflict[];
+  if (!rows.length) return [];
+  const others = check(await supabase.from('claims').select('*').in('id', rows.map((r) => r.other_claim_id))) as Claim[];
+  const posts = check(await supabase.from('posts_v').select(POST_COLS).in('id', [...new Set(rows.map((r) => r.other_post_id))])) as Post[];
+  await getProfiles(posts.map((p) => p.author_id));
+  return rows.map((r) => ({ ...r, other: others.find((o) => o.id === r.other_claim_id), post: posts.find((p) => p.id === r.other_post_id) }));
+}
+export async function eventClaims(tag: string): Promise<{ claims: EventClaim[]; posts: Post[] }> {
+  const claims = check(await supabase.rpc('event_claims', { tag })) as EventClaim[];
+  if (!claims.length) return { claims, posts: [] };
+  const posts = check(await supabase.from('posts_v').select(POST_COLS).in('id', [...new Set(claims.map((c) => c.post_id))])) as Post[];
+  await getProfiles(posts.map((p) => p.author_id));
+  return { claims, posts };
+}
+export async function requestReview(me: string, postId: number, claimId: number | null, text: string) {
+  check(await supabase.from('fact_reviews').insert({ post_id: postId, claim_id: claimId, requested_by: me, request_text: text.trim() }));
+}
+export async function reviewsFor(postId: number): Promise<Review[]> {
+  return check(await supabase.from('fact_reviews_v').select('*').eq('post_id', postId).order('created_at', { ascending: false })) as Review[];
+}
+export async function submitAppeal(me: string, reviewId: number, text: string) {
+  check(await supabase.from('appeals').insert({ review_id: reviewId, author_id: me, appeal_text: text.trim() }));
+}
+// Reviewer desk (moderators only; the database enforces this)
+export async function openReviews(): Promise<(Review & { requested_by: string | null })[]> {
+  return check(await supabase.from('fact_reviews').select('*').order('created_at', { ascending: false }).limit(200)) as (Review & { requested_by: string | null })[];
+}
+export async function decideReview(id: number, status: ReviewStatus, text: string) {
+  check(await supabase.from('fact_reviews').update({ status, decision_text: text.trim() }).eq('id', id));
+}
+export async function openAppeals(): Promise<Appeal[]> {
+  return check(await supabase.from('appeals').select('*').order('created_at', { ascending: false }).limit(200)) as Appeal[];
+}
+export async function decideAppeal(id: number, status: 'upheld' | 'overturned', text: string) {
+  check(await supabase.from('appeals').update({ status, decision_text: text.trim() }).eq('id', id));
+}
+export async function contentReports(): Promise<ContentReport[]> {
+  return check(await supabase.from('reports').select('*').order('created_at', { ascending: false }).limit(200)) as ContentReport[];
+}
+export async function decideReport(id: number, status: 'actioned' | 'dismissed', decision: string) {
+  check(await supabase.from('reports').update({ status, decision: decision.trim(), decided_at: new Date().toISOString() }).eq('id', id));
+}
+export async function setHidden(type: 'post' | 'story' | 'comment', id: number, hidden: boolean) {
+  const table = type === 'post' ? 'posts' : type === 'story' ? 'stories' : 'comments';
+  check(await supabase.from(table).update({ hidden }).eq('id', id));
 }

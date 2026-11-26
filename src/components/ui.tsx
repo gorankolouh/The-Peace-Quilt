@@ -12,6 +12,7 @@ export const Icon = {
   star: () => svg(<><circle cx="5" cy="6" r="2" /><circle cx="18" cy="5" r="2" /><circle cx="12" cy="18" r="2" /><path d="M7 6.5l9-1M6.2 7.6l4.8 8.8M17 6.8l-4 9.4" /></>),
   msg: () => svg(<path d="M4 5h16v11H9l-5 4z" />),
   grid: () => svg(<><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></>),
+  shield: () => svg(<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z M9 12l2 2 4-4" />),
   search: () => svg(<><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></>),
   user: () => svg(<><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" /></>),
   plus: () => svg(<path d="M12 5v14M5 12h14" />, 22, 2.2),

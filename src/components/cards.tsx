@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { CONSENT_SHORT, POST_KINDS, REPORT_REASONS, countryName } from '../lib/constants';
 import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
+import { Signals } from './transparency';
 import { addComment, cachedProfile, deleteComment, getComments, report, setLike } from '../lib/data';
 import { nameOf, readMinutes, timeAgo } from '../lib/format';
 import type { Comment, Post, Region, Story, Theme } from '../lib/types';
@@ -148,6 +149,7 @@ export function PostCard({ p, reason }: { p: Post; reason?: string }) {
         </Link>
       )}
       {!long && p.media_path && p.media_kind && <MediaView path={p.media_path} kind={p.media_kind} />}
+      <Signals p={p} compact />
       <SubjectChips ids={p.subject_ids || []} tags={p.tags || []} />
       {p.sources?.length > 0 && <span className="note">{p.sources.length} source{p.sources.length > 1 ? 's' : ''} linked</span>}
       {reason && <span className="note reason">{reason}</span>}

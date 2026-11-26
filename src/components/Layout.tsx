@@ -72,6 +72,8 @@ export function Layout() {
   const extra: [string, string, () => JSX.Element][] = [
     ['/search', 'Search', Icon.search],
     ['/peace-quilt', 'Peace Quilt', Icon.star],
+    ['/transparency', 'Transparency', Icon.shield],
+    ...(me?.is_moderator ? [['/review', 'Review desk', Icon.flag] as [string, string, () => JSX.Element]] : []),
   ];
 
   return (

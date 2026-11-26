@@ -10,7 +10,7 @@ const P = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
 const ago = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
 
 const profiles: Row[] = [
-  { id: DEMO_ME, username: 'demo', display_name: 'Demo account', role: 'Mediator', bio: 'Collecting peace stories from the Riverside district.', is_researcher: false, is_moderator: false, created_at: ago(900) },
+  { id: DEMO_ME, username: 'demo', display_name: 'Demo account', role: 'Mediator', bio: 'Collecting peace stories from the Riverside district.', is_researcher: false, is_moderator: true, created_at: ago(900) },
   { id: P(2), username: 'lena_mediates', display_name: 'Lena Haddad', role: 'Mediator', bio: 'Community mediator. Water, bread and schools first.', is_researcher: false, is_moderator: false, created_at: ago(800) },
   { id: P(3), username: 'miravos', display_name: 'Dr. Mira Vos', role: 'Researcher', bio: 'I study local agreements that no government signed.', is_researcher: true, is_moderator: false, created_at: ago(700) },
   { id: P(4), username: 'youssef_a', display_name: 'Youssef A.', role: 'Teacher', bio: 'Teacher. Two shifts, one classroom.', is_researcher: false, is_moderator: false, created_at: ago(600) },
@@ -105,6 +105,23 @@ const posts: Row[] = SEED.map((x, i) => ({
   id: i + 1, author_id: x.a, kind: x.k, title: x.t, body: x.b, created_at: ago(x.h), media_path: null, media_kind: null, hidden: false,
   language: x.l ?? 'en', country: x.c ?? null, sources: x.src ?? [], updated_at: null,
 }));
+const NATURE = ['factual', 'mixed', 'opinion', 'mixed', 'factual', 'opinion', 'mixed', 'mixed'];
+posts.forEach((p, i) => { p.nature = NATURE[i] ?? 'mixed'; });
+const claims: Row[] = [
+  { id: 1, post_id: 1, created_by: P(3), statement: 'German schools are missing about 14,000 teachers in the 2026/27 school year', event_tag: 'teacher shortage germany 2026', metric: 'missing teachers', value: 14000, unit: 'teachers', occurred_on: null, location: 'Germany', created_at: ago(2) },
+  { id: 2, post_id: 1, created_by: P(3), statement: 'Spending per pupil ranges from about 8,900 to 12,400 euros between states', event_tag: 'german school budgets 2026', metric: 'spending per pupil (max)', value: 12400, unit: '€', occurred_on: null, location: 'Germany', created_at: ago(2) },
+  { id: 3, post_id: 5, created_by: P(5), statement: 'A teachers union estimate puts the German shortage at about 40,000 teachers', event_tag: 'teacher shortage germany 2026', metric: 'missing teachers', value: 40000, unit: 'teachers', occurred_on: null, location: 'Germany', created_at: ago(12) },
+];
+const claimEvidence: Row[] = [
+  { id: 1, claim_id: 1, added_by: P(3), url: 'https://www.kmk.org/presse/teacher-demand-2026.html', title: 'KMK teacher demand projection', stance: 'supports', note: 'Official projection for full-time equivalents.', domain: 'kmk.org', created_at: ago(2) },
+  { id: 2, claim_id: 1, added_by: P(4), url: 'https://kmk.org/statistik/lehrkraefte.pdf', title: 'KMK statistics', stance: 'supports', note: 'Same source as above, counts once.', domain: 'kmk.org', created_at: ago(1.5) },
+  { id: 3, claim_id: 1, added_by: P(2), url: 'https://www.destatis.de/teachers', title: 'Destatis teacher statistics', stance: 'context', note: 'Explains full-time equivalents versus headcount.', domain: 'destatis.de', created_at: ago(1) },
+  { id: 4, claim_id: 3, added_by: P(5), url: 'https://www.gew.de/aktuelles/lehrkraeftemangel', title: 'GEW union estimate', stance: 'supports', note: 'Includes part-time and unfilled hours.', domain: 'gew.de', created_at: ago(11) },
+];
+const factReviews: Row[] = [
+  { id: 1, post_id: 5, claim_id: 3, requested_by: P(4), request_text: 'The 40,000 figure is much higher than the official projection. Which definition is used?', status: 'context', decision_text: 'Both figures are documented. The union estimate counts unfilled hours including part-time posts; the official figure counts full-time equivalents. Context added so readers can compare definitions.', decided_by: P(5), decided_at: ago(6), created_at: ago(10) },
+];
+const appeals: Row[] = [];
 const postSubjects: Row[] = SEED.flatMap((x, i) => x.s.map((subject_id) => ({ post_id: i + 1, subject_id })));
 const postSubtopics: Row[] = SEED.flatMap((x, i) => (x.st ?? []).map((n) => ({ post_id: i + 1, subtopic_id: st(n) })));
 const postTags: Row[] = SEED.flatMap((x, i) => (x.tags ?? []).map((tag) => ({ post_id: i + 1, tag })));
@@ -129,6 +146,10 @@ const db: Record<string, Row[]> = {
   post_subjects: postSubjects,
   post_subtopics: postSubtopics,
   post_tags: postTags,
+  claims,
+  claim_evidence: claimEvidence,
+  fact_reviews: factReviews,
+  appeals,
   user_interests: [6, 8, 3].map((subject_id) => ({ user_id: DEMO_ME, subject_id })),
   likes: [
     ...stories.slice(0, 20).flatMap((s, i) => profiles.slice(1, 2 + (i % 5)).map((p) => ({ user_id: p.id, target_type: 'story', target_id: s.id, created_at: ago(1) }))),
@@ -155,7 +176,7 @@ const db: Record<string, Row[]> = {
   blocks: [],
   reports: [],
 };
-const nextId: Record<string, number> = { stories: 100, posts: 100, comments: 100, messages: 100, reports: 1 };
+const nextId: Record<string, number> = { claims: 100, claim_evidence: 100, fact_reviews: 100, appeals: 100, stories: 100, posts: 100, comments: 100, messages: 100, reports: 1 };
 let me: string | null = DEMO_ME;
 
 function view(name: string): Row[] {
@@ -179,9 +200,34 @@ function view(name: string): Row[] {
       subject_ids: db.post_subjects.filter((x) => x.post_id === p.id).map((x) => x.subject_id).sort((a, b) => a - b),
       subtopic_ids: db.post_subtopics.filter((x) => x.post_id === p.id).map((x) => x.subtopic_id),
       tags: db.post_tags.filter((x) => x.post_id === p.id).map((x) => x.tag).sort(),
+      claim_count: db.claims.filter((c) => c.post_id === p.id).length,
+      signal_context: db.claim_evidence.some((e) => e.stance === 'context' && db.claims.some((c) => c.id === e.claim_id && c.post_id === p.id))
+        || db.fact_reviews.some((r) => r.post_id === p.id && r.status === 'context'),
+      signal_conflict: conflictsFor(p.id).length > 0,
+      signal_correction: db.fact_reviews.some((r) => r.post_id === p.id && r.status === 'correction'),
     }));
   }
+  if (name === 'fact_reviews_v') {
+    return db.fact_reviews.map((r) => {
+      const a = db.appeals.filter((x) => x.review_id === r.id).pop();
+      return { ...r, requested_by: undefined, requested_by_me: r.requested_by === me, appeal_status: a?.status ?? null, appeal_decision: a?.decision_text ?? null,
+        on_my_post: db.posts.some((p) => p.id === r.post_id && p.author_id === me) };
+    });
+  }
   return db[name] ?? [];
+}
+
+function conflictsFor(pid: number): Row[] {
+  const out: Row[] = [];
+  db.claims.filter((a) => a.post_id === pid && a.event_tag).forEach((a) => {
+    db.claims.filter((b) => b.event_tag === a.event_tag && b.post_id !== pid).forEach((b) => {
+      if (a.metric && a.metric === b.metric && a.value != null && b.value != null) {
+        const hi = Math.max(a.value, b.value), lo = Math.min(a.value, b.value);
+        if (hi > 1.5 * lo) out.push({ claim_id: a.id, other_claim_id: b.id, other_post_id: b.post_id, kind: 'number', mine_value: a.value, other_value: b.value, ratio: Math.round((hi / lo) * 100) / 100 });
+      }
+    });
+  });
+  return out;
 }
 
 function parseVal(v: string): string { return v.replace(/^"|"$/g, ''); }
@@ -261,6 +307,15 @@ function rpc(fn: string, args: Row): unknown {
     return null;
   }
   if (fn === 'delete_my_account') { me = null; return null; }
+  if (fn === 'claim_conflicts') return conflictsFor(args.pid);
+  if (fn === 'event_claims') {
+    return db.claims.filter((c) => c.event_tag === String(args.tag).toLowerCase()).map((c) => {
+      const ev = db.claim_evidence.filter((e) => e.claim_id === c.id);
+      return { claim_id: c.id, post_id: c.post_id, statement: c.statement, metric: c.metric, value: c.value, unit: c.unit, occurred_on: c.occurred_on, location: c.location, created_at: c.created_at,
+        supports: ev.filter((e) => e.stance === 'supports').length, contradicts: ev.filter((e) => e.stance === 'contradicts').length, context: ev.filter((e) => e.stance === 'context').length,
+        independent_sources: new Set(ev.filter((e) => e.stance === 'supports').map((e) => e.domain)).size };
+    });
+  }
   if (fn === 'related_posts') {
     const all = view('posts_v');
     const base = all.find((p) => p.id === args.pid);
@@ -325,6 +380,8 @@ export async function demoFetch(input: RequestInfo | URL, init: RequestInit = {}
       if (table in nextId && row.id === undefined) row.id = nextId[table]++;
       if (table === 'stories' || table === 'posts' || table === 'comments') row.hidden = false;
       if (table === 'messages') scheduleReply(row.conversation_id);
+      if (table === 'claim_evidence') row.domain = String(row.url).replace(/^https?:\/\//, '').split(/[/:?#]/)[0].replace(/^www\./, '');
+      if (table === 'fact_reviews') { row.status = 'open'; row.decision_text = null; }
       return row;
     });
     (db[table] ||= []).push(...rows);

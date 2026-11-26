@@ -13,15 +13,28 @@ Stack: React + TypeScript (Vite), Supabase (Postgres, Auth, Storage, Realtime) i
 - **Search the archive:** full-text search with subject, country, language, type and topic filters. Old contributions stay findable.
 - **Kept from before:** accounts (email and Google), profiles, follows, comments, likes, private messages, blocking, reporting, GDPR export and account deletion, private media with signed links, and photo metadata removal.
 
+## Phase 2: information transparency layer
+
+- **Nature label** on every contribution: mainly factual, opinion or interpretation, or mixed. Opinions are not fact-checked.
+- **Factual claims:** authors list the key facts (statement, event, what is counted, number, unit, date, place) when publishing or later. Anyone signed in can attach evidence that **supports**, **contradicts** or **adds context**.
+- **Independent sources** are counted by distinct website, so repeating one source never counts as confirmation. Likes and repetition never count as evidence.
+- **Signals:** BLUE means additional context is available. AMBER is set automatically when the same event and metric is reported more than 50% apart, or with dates more than two days apart; it is not a verdict. RED means a documented correction, which only a human reviewer can set, always with a public written explanation.
+- **Comparison view** (`/compare/<event>`) shows all reported figures for one event side by side, with the range and the evidence for each.
+- **Question a claim:** any member can send a factual statement for human review, with evidence. The requester's identity is not shown publicly.
+- **Review desk** (`/review`, moderators only) covers fact reviews, appeals and content reports. Every decision needs a public explanation. Reports can hide content.
+- **Appeals:** the author can request reconsideration once per decision. An overturned decision removes the signal and the reversal is recorded.
+- **"How this works"** public page (`/transparency`).
+
+Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `event_claims`). It can later be extended with AI-assisted and cross-language matching.
+
 ## Planned next (not built yet)
 
-- **Phase 2, information transparency layer:** claims and evidence, BLUE/AMBER/RED notices, a contradiction-detection demo, a human review workflow and appeals.
 - **Phase 3, platform operations:** notifications, comment replies, a moderator dashboard with documented decisions and user notices, rate limiting, interface translations (DE, FR, NL, ES, IT, HR, PL), translated-content labels, cross-language connections, and a European infrastructure assessment.
 
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql` and `0004_avatars_chat_files.sql`, in that order. Each one is additive and keeps existing data.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql` and `0005_transparency.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 

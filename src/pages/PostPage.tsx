@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Comments, CoverArt, LikeButton, PostCard, ReportButton, SubjectChips } from '../components/cards';
 import { Avatar, ErrorNote, Icon, MediaView, RoleChip, Spinner } from '../components/ui';
 import { POST_KINDS, countryName, languageName } from '../lib/constants';
@@ -8,6 +8,7 @@ import { nameOf, readMinutes, timeAgo } from '../lib/format';
 import { removeMedia } from '../lib/media';
 import type { Post, Related } from '../lib/types';
 import { useSubjects } from '../lib/useSubjects';
+import { TransparencyPanel } from '../components/transparency';
 
 function hostOf(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
@@ -52,7 +53,13 @@ export default function PostPage() {
   const [p, setP] = useState<Post | null | undefined>(undefined);
   const [err, setErr] = useState<string | null>(null);
 
+  const loc = useLocation();
   useEffect(() => { setP(undefined); getPost(id).then(setP).catch((e) => setErr(e.message)); }, [id]);
+  useEffect(() => {
+    if (!p || !loc.hash) return;
+    const t = setTimeout(() => document.getElementById(loc.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    return () => clearTimeout(t);
+  }, [p, loc.hash]);
 
   if (err) return <div className="col"><ErrorNote error={err} /></div>;
   if (p === undefined) return <div className="col"><Spinner /></div>;
@@ -105,6 +112,7 @@ export default function PostPage() {
           </>
         ) : <ReportButton type="post" id={p.id} />}
       </div>
+      {p.kind !== 'question' && <TransparencyPanel post={p} />}
       <Comments type="post" id={p.id} />
       <RelatedList postId={p.id} />
     </article>
