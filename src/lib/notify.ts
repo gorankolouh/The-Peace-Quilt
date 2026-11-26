@@ -41,8 +41,13 @@ export function chime() {
 
 export function showBrowserNotification(title: string, body: string, onClick: () => void) {
   if (!browserNotifySupported() || Notification.permission !== 'granted' || !document.hidden) return;
+  // Android only allows notifications through the service worker.
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then((r) => r.showNotification(title, { body, icon: '/icon-192.png', badge: '/badge-96.png', tag: 'va-message', data: { url: location.pathname } })).catch(() => {});
+    return;
+  }
   try {
-    const n = new Notification(title, { body, icon: '/favicon.svg', tag: 'va-message' });
+    const n = new Notification(title, { body, icon: '/icon-192.png', tag: 'va-message' });
     n.onclick = () => { window.focus(); onClick(); n.close(); };
   } catch { /* some browsers only allow this from a service worker */ }
 }

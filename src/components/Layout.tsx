@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { getProfiles, myConversations, unreadNotifications } from '../lib/data';
 import { useT } from '../lib/i18n';
 import { chime, showBrowserNotification } from '../lib/notify';
+import { refreshPushOwner } from '../lib/push';
 import type { Message, Notification } from '../lib/types';
 import { RightRail } from './RightRail';
 import { nameOf } from '../lib/format';
@@ -51,6 +52,9 @@ export function Layout() {
     }).subscribe();
     return () => { window.removeEventListener('va-notifications-read', onRead); supabase.removeChannel(ch); };
   }, [me, loc.pathname]);
+
+  // Keep this device's push subscription attached to whoever is signed in.
+  useEffect(() => { if (me?.id) refreshPushOwner(); }, [me?.id]);
 
   // Live notifications for new messages.
   useEffect(() => {

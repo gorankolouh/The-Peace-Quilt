@@ -10,6 +10,7 @@ Status: November 2026. This is a working assessment for the prototype (100–200
 | Front end (static files, CDN) | Vercel | Vercel, Inc. (USA) | Global edge network; the site holds no user data, but request logs (IP addresses) are processed | Vercel DPA with SCCs; Vercel is certified under the EU-US Data Privacy Framework |
 | Auth emails | Supabase's built-in mailer (Postmark, USA, per Supabase's subprocessor list) | USA | Email addresses and confirmation links | Via the Supabase DPA |
 | Automatic translation (optional) | Chrome on-device translator, or DeepL via the `translate` function | On-device: nothing leaves the computer. DeepL SE (Germany) | Server translations are cached in the EU database | DeepL is an EU company; use a paid plan for production |
+| Push notifications (opt-in) | The browser's own push service (Chrome: Google FCM; Safari: Apple; Firefox: Mozilla) | Required by how Web Push works | Only encrypted payloads and the device's push address pass through; message text is never included | Unavoidable for push on phones; disclose in the privacy policy |
 | Google login (optional) | Google | USA | Only if the user chooses it | Google's own terms |
 
 **What is already sovereign by design:** no ads, no trackers, no third-party analytics, no external fonts or scripts, photos stripped of location data before upload, all personal data in one EU-region database, full export and deletion in Settings.

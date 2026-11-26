@@ -495,3 +495,4 @@ article.card:hover, .subj-card:hover, .link:hover, .inbox a:hover { border-color
 .lang-opt.off { text-decoration: line-through; opacity: .55; border-style: dashed; }
 .conn { text-decoration: none; color: inherit; gap: 6px; }
 .conn:hover { border-color: #C6F43255; }
+.push-nudge { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-color: #C6F43255; }

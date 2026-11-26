@@ -11,6 +11,7 @@ import { PROFILE_ROLES } from '../lib/constants';
 import { deleteMyAccount, exportMyData, getInterests, setInterests, updateMyProfile } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { LANGS, useI18n, useT as useT2 } from '../lib/i18n';
+import { canInstall, currentSubscription, disablePush, enablePush, installApp, isInstalled, onInstallChange, pushSupported } from '../lib/push';
 
 export default function Settings() {
   const { me, refresh } = useAuth();
@@ -80,6 +81,8 @@ export default function Settings() {
 
       <PrivacyCard />
 
+      <PushCard />
+
       <section className="card">
         <h2 className="h2" style={{ margin: 0 }}>Notifications</h2>
         <p className="sub">When a new message arrives, you see a pop-up and the unread count in the tab title.</p>
@@ -88,7 +91,7 @@ export default function Settings() {
         {notif === 'default' && <button className="btn ghost sm" onClick={async () => setNotif(await askBrowserNotify())}>Turn on browser notifications</button>}
         {notif === 'denied' && <p className="note">Browser notifications are blocked. You can allow them in your browser's site settings.</p>}
         {notif === 'unsupported' && <p className="note">This browser does not support notifications.</p>}
-        <p className="note">Follows, comments, replies, evidence and moderation decisions about your content appear under Notifications. Email and phone push notifications are planned for a later version.</p>
+        <p className="note">Follows, comments, replies, evidence and moderation decisions about your content appear under Notifications. Email notifications are planned for a later version.</p>
       </section>
 
       <section className="card" id="interests">
@@ -115,7 +118,7 @@ export default function Settings() {
       </section>
 
       <ErrorNote error={err} />
-      <button className="btn ghost" onClick={async () => { await supabase.auth.signOut(); nav('/'); }}>Log out</button>
+      <button className="btn ghost" onClick={async () => { await disablePush().catch(() => {}); await supabase.auth.signOut(); nav('/'); }}>Log out</button>
     </div>
   );
 }
@@ -157,6 +160,47 @@ function PrivacyCard() {
       {ok && <p className="ok">{t('privacy.saved')}</p>}
       <ErrorNote error={err} />
       <p className="note">{t('privacy.note')}</p>
+    </section>
+  );
+}
+
+/** Notifications on this phone or computer, even when Verum Agora is closed. */
+function PushCard() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [installable, setInstallable] = useState(canInstall());
+  useEffect(() => { currentSubscription().then((s) => setOn(!!s)).catch(() => setOn(false)); }, []);
+  useEffect(() => onInstallChange(() => setInstallable(canInstall())), []);
+  const supported = pushSupported();
+  const ios = /iPhone|iPad/.test(navigator.userAgent);
+  async function turnOn() {
+    setBusy(true); setMsg(null);
+    try {
+      const r = await enablePush();
+      if (r === 'on') { setOn(true); setMsg('Notifications are on for this device.'); }
+      else if (r === 'denied') setMsg('Notifications are blocked. Allow them for this site in your browser or phone settings, then try again.');
+      else setMsg('This browser does not support notifications.');
+    } catch (x) { setMsg((x as Error).message); }
+    setBusy(false);
+  }
+  async function turnOff() {
+    setBusy(true); setMsg(null);
+    try { await disablePush(); setOn(false); setMsg('Notifications are off for this device.'); } catch (x) { setMsg((x as Error).message); }
+    setBusy(false);
+  }
+  return (
+    <section className="card" id="push">
+      <h2 className="h2" style={{ margin: 0 }}>Notifications on this device</h2>
+      <p className="sub">Get a notification for new messages, replies, follows and decisions about your content, even when Verum Agora is closed. Messages are announced without their text, so nothing private shows on your lock screen.</p>
+      {!isInstalled() && installable && (
+        <button className="btn ghost" onClick={() => installApp()}>Install Verum Agora as an app</button>
+      )}
+      {!supported && ios && <p className="note">On iPhone: tap Share, then "Add to Home Screen", open Verum Agora from there, and come back to this page.</p>}
+      {!supported && !ios && <p className="note">This browser does not support notifications.</p>}
+      {supported && on === false && <button className="btn" onClick={turnOn} disabled={busy}>{busy ? 'Turning on…' : 'Turn on notifications'}</button>}
+      {supported && on && <button className="btn ghost" onClick={turnOff} disabled={busy}>Turn off on this device</button>}
+      {msg && <p className="note">{msg}</p>}
     </section>
   );
 }

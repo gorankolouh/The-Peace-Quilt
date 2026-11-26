@@ -70,6 +70,15 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 - **Self-hosted fonts:** Google Fonts removed, so no visitor IP addresses go to Google.
 - **Security headers:** Content-Security-Policy (only our own scripts; connections only to our Supabase project), HSTS, cross-origin isolation for popups, long-term caching of built assets.
 
+## Push notifications on phones and computers
+
+- Verum Agora is an installable app (manifest, icons, service worker). On Android: open the site in Chrome, then menu → "Install app" (or Settings → "Install Verum Agora as an app").
+- Settings → "Notifications on this device" → Turn on. Each device opts in separately; logging out turns it off for that device.
+- New messages, follows, comments, replies, evidence and moderation decisions are pushed even when the app is closed. Message notifications show only the sender's name, never the text.
+- How it works: the database (`push_hook` trigger, migration `0010_web_push.sql`) calls the `push` Edge Function through `pg_net` with a private token; the function creates its own VAPID keys on first use and stores them in `push_config`, which no user can read. Push payloads are encrypted end to end, so the browser's push service (for Chrome: Google) only sees encrypted data and the device address.
+- Setup after running 0010: deploy `supabase/functions/push`, turn off "Verify JWT" for that function (it checks its own token), and set the URL once:
+  `update public.push_config set function_url = 'https://<project>.supabase.co/functions/v1/push';`
+
 ## Planned next (not built yet)
 
 - Suggested topic links (detecting likely equivalents automatically, confirmed by people)
@@ -79,7 +88,7 @@ Conflict detection is a rule-based demonstration in SQL (`claim_conflicts`, `eve
 ## 1. Set up the database (once)
 
 1. Supabase → your project → **SQL Editor** → New query.
-2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql`, `0007_moderation_records_privacy.sql`, `0008_translation_cross_language.sql` and `0009_feed_controls_people_notices.sql`, in that order. Each one is additive and keeps existing data.
+2. Paste the whole of `supabase/migrations/0001_init.sql` and click **Run**. Then run `0002_grants.sql`, `0003_verum_agora.sql`, `0004_avatars_chat_files.sql`, `0005_transparency.sql`, `0006_notifications_replies_limits.sql`, `0007_moderation_records_privacy.sql`, `0008_translation_cross_language.sql`, `0009_feed_controls_people_notices.sql` and `0010_web_push.sql`, in that order. Each one is additive and keeps existing data.
 
 This creates the tables, the security rules (row level security), the private `media` storage bucket, messaging and the account-deletion function.
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, Empty, ErrorNote, Spinner } from '../components/ui';
+import { currentSubscription, pushSupported } from '../lib/push';
 import { cachedProfile, clearNotifications, getNotifications, markNotificationsRead } from '../lib/data';
 import { nameOf, timeAgo } from '../lib/format';
 import { useT } from '../lib/i18n';
@@ -27,6 +28,21 @@ function line(n: Notification, actor: string, t: (k: string) => string) {
   }
 }
 
+function PushNudge() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!pushSupported() || Notification.permission === 'denied') return;
+    currentSubscription().then((s) => setShow(!s)).catch(() => {});
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="card push-nudge">
+      <span>Get these on your phone, even when Verum Agora is closed.</span>
+      <Link className="btn sm" to="/settings#push">Turn on</Link>
+    </div>
+  );
+}
+
 export default function Notifications() {
   const t = useT();
   const [list, setList] = useState<Notification[] | null>(null);
@@ -40,6 +56,7 @@ export default function Notifications() {
         <h1 className="h1">{t('nav.notifications')}</h1>
         {list && list.length > 0 && <button className="btn ghost sm" onClick={async () => { await clearNotifications(); setList([]); }}>{t('notif.clear')}</button>}
       </div>
+      <PushNudge />
       <ErrorNote error={err} />
       {!list && !err && <Spinner />}
       {list?.length === 0 && <Empty title={t('notif.empty')}><p className="sub">{t('notif.empty_help')}</p></Empty>}

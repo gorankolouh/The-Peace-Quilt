@@ -31,6 +31,7 @@ import Rules from './pages/Rules';
 import Connections from './pages/Connections';
 import Notice from './pages/Notice';
 import { I18nProvider } from './lib/i18n';
+import { registerServiceWorker } from './lib/push';
 import { Login, Signup, ResetPassword, Setup } from './pages/Auth';
 import { Imprint, Privacy, Terms } from './pages/Legal';
 
@@ -103,6 +104,8 @@ function App() {
     </SetupGate>
   );
 }
+
+registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
