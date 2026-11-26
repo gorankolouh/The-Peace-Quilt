@@ -7,7 +7,7 @@ import { SUBJECT_COLORS, useSubjects } from '../lib/useSubjects';
 import { Signals } from './transparency';
 import { addComment, cachedProfile, deleteComment, getComments, report, setLike } from '../lib/data';
 import { nameOf, readMinutes, timeAgo } from '../lib/format';
-import { plainText } from '../lib/body';
+import { inlinePhotos, plainText } from '../lib/body';
 import type { Comment, Post, Region, Story, Theme } from '../lib/types';
 import { Avatar, Chip, ErrorNote, Icon, MediaView, Modal, RoleChip } from './ui';
 
@@ -148,6 +148,12 @@ export function SubjectChips({ ids, subtopicIds = [], tags = [] }: { ids: number
   );
 }
 
+/** The photo that represents an article in lists: its attached photo, else the first photo inside its text. */
+export function coverPhoto(p: Pick<Post, 'media_path' | 'media_kind' | 'body'>): string | null {
+  if (p.media_path && p.media_kind === 'photo') return p.media_path;
+  return inlinePhotos(p.body)[0] ?? null;
+}
+
 export function PostCard({ p, reason }: { p: Post; reason?: string }) {
   const author = cachedProfile(p.author_id);
   const long = p.kind === 'article' || p.kind === 'research';
@@ -159,7 +165,9 @@ export function PostCard({ p, reason }: { p: Post; reason?: string }) {
       <Who authorId={p.author_id} role={author?.role ?? 'Member'} meta={meta} />
       {long ? (
         <Link className="art" to={`/post/${p.id}`}>
-          <div className="cover" aria-hidden="true"><CoverArt seed={p.id} /></div>
+          {coverPhoto(p)
+            ? <div className="cover photo"><MediaView path={coverPhoto(p)!} kind="photo" label={p.title || undefined} /></div>
+            : <div className="cover" aria-hidden="true"><CoverArt seed={p.id} /></div>}
           <div className="txt">
             <span className="eyebrow muted">{POST_KINDS[p.kind]} · {readMinutes(plainText(p.body))} min read</span>
             <h3>{p.title}</h3>

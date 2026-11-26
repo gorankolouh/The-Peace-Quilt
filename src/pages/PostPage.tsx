@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Comments, CoverArt, LikeButton, PostCard, ReportButton, ShareButton, SubjectChips } from '../components/cards';
+import { Comments, CoverArt, coverPhoto, LikeButton, PostCard, ReportButton, ShareButton, SubjectChips } from '../components/cards';
 import { Avatar, ErrorNote, Icon, MediaView, RoleChip, Spinner } from '../components/ui';
 import { POST_KINDS, countryName, languageName } from '../lib/constants';
 import { cachedProfile, deletePost, getPost, relatedPosts } from '../lib/data';
@@ -98,7 +98,7 @@ export default function PostPage() {
   return (
     <article className={long ? 'read' : 'col'}>
       <button className="back" onClick={() => nav(-1)}>{Icon.back()}Back</button>
-      {long && <div className="cover big" aria-hidden="true"><CoverArt seed={p.id} /></div>}
+      {long && !coverPhoto(p) && <div className="cover big" aria-hidden="true"><CoverArt seed={p.id} /></div>}
       <span className="eyebrow block">{POST_KINDS[p.kind]}{long ? ` · ${readMinutes(plainText(p.body))} min read` : ''}</span>
       {(tr?.title ?? p.title) && <h1 className={long ? '' : 'h1'} lang={tr ? lang : p.language}>{tr?.title ?? p.title}</h1>}
       {author}
